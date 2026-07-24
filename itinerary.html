@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weekend Itinerary — Hannah & Ethan Wedding</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="header-inner">
+      <button class="nav-toggle-btn" id="nav-toggle-btn">
+        <div class="hamburger-lines">
+          <span></span>
+          <span></span>
+        </div>
+        <span>Menu</span>
+      </button>
+
+      <a href="invitation.html" class="header-monogram">H & E</a>
+
+      <div class="header-actions">
+        <button class="access-badge" id="header-access-badge">
+          <span class="badge-dot"></span>
+          <span id="badge-tier-text">GUEST ACCESS LOOKUP</span>
+        </button>
+        <a href="rsvp.html" class="btn-rsvp-header">RSVP</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- DRAWER -->
+  <div class="drawer-overlay" id="drawer-overlay"></div>
+  <aside class="slide-drawer" id="slide-drawer">
+    <div class="drawer-header">
+      <span class="drawer-title font-serif">Hannah & Ethan</span>
+      <button class="drawer-close-btn" id="drawer-close-btn">&times;</button>
+    </div>
+    <nav class="drawer-nav">
+      <a href="invitation.html" class="drawer-link protected-nav-link"><span>The Invitation</span><span class="drawer-link-sub">01</span></a>
+      <a href="itinerary.html" class="drawer-link active protected-nav-link"><span>Weekend Itinerary</span><span class="drawer-link-sub">02</span></a>
+      <a href="accommodations.html" class="drawer-link protected-nav-link"><span>Hotel Accommodations</span><span class="drawer-link-sub">03</span></a>
+      <a href="registry.html" class="drawer-link protected-nav-link"><span>Gift Registry</span><span class="drawer-link-sub">04</span></a>
+      <a href="rsvp.html" class="drawer-link protected-nav-link"><span>Formal RSVP</span><span class="drawer-link-sub">05</span></a>
+      <a href="admin.html" class="drawer-link protected-nav-link" id="drawer-admin-link" style="display: none;"><span>Admin Console</span><span class="drawer-link-sub">ADMIN</span></a>
+    </nav>
+    <div class="drawer-status-card">
+      <div class="drawer-status-title">Current Entitlement Status</div>
+      <div class="drawer-status-value" id="drawer-status-value">Guest Session Unverified</div>
+      <button class="drawer-status-btn" id="drawer-reset-session">Sign Out / Lock</button>
+    </div>
+  </aside>
+
+  <!-- PAGE HERO -->
+  <section class="page-hero">
+    <div class="container">
+      <p class="page-hero-label">Schedule of Events</p>
+      <h1 class="page-hero-title">The Weekend Itinerary</h1>
+      <p class="page-hero-subtitle">March 26 – 28, 2027 — The Biltmore Hotel, Coral Gables</p>
+    </div>
+  </section>
+
+  <!-- TIMELINE GRID & PILLS -->
+  <section class="section-padding">
+    <div class="container">
+      <div style="text-align: center;">
+        <div class="tier-toggle-pills">
+          <button class="pill-btn active" id="pill-view-weekend">Full Weekend Schedule</button>
+          <button class="pill-btn" id="pill-view-wedding">Wedding Day Only</button>
+        </div>
+      </div>
+
+      <div class="timeline-grid" id="timeline-grid">
+        <!-- Rendered by app.js -->
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-monogram font-serif">H & E</div>
+      <p class="footer-names">Hannah Levine & Ethan Nachmani</p>
+      <p class="footer-copy">March 26–28, 2027 — The Biltmore Hotel, Coral Gables, Florida</p>
+    </div>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

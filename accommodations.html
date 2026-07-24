@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hotel Accommodations — Hannah & Ethan Wedding</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="header-inner">
+      <button class="nav-toggle-btn" id="nav-toggle-btn">
+        <div class="hamburger-lines"><span></span><span></span></div>
+        <span>Menu</span>
+      </button>
+      <a href="invitation.html" class="header-monogram">H & E</a>
+      <div class="header-actions">
+        <button class="access-badge" id="header-access-badge">
+          <span class="badge-dot"></span>
+          <span id="badge-tier-text">GUEST ACCESS LOOKUP</span>
+        </button>
+        <a href="rsvp.html" class="btn-rsvp-header">RSVP</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- DRAWER -->
+  <div class="drawer-overlay" id="drawer-overlay"></div>
+  <aside class="slide-drawer" id="slide-drawer">
+    <div class="drawer-header">
+      <span class="drawer-title font-serif">Hannah & Ethan</span>
+      <button class="drawer-close-btn" id="drawer-close-btn">&times;</button>
+    </div>
+    <nav class="drawer-nav">
+      <a href="invitation.html" class="drawer-link protected-nav-link"><span>The Invitation</span><span class="drawer-link-sub">01</span></a>
+      <a href="itinerary.html" class="drawer-link protected-nav-link"><span>Weekend Itinerary</span><span class="drawer-link-sub">02</span></a>
+      <a href="accommodations.html" class="drawer-link active protected-nav-link"><span>Hotel Accommodations</span><span class="drawer-link-sub">03</span></a>
+      <a href="registry.html" class="drawer-link protected-nav-link"><span>Gift Registry</span><span class="drawer-link-sub">04</span></a>
+      <a href="rsvp.html" class="drawer-link protected-nav-link"><span>Formal RSVP</span><span class="drawer-link-sub">05</span></a>
+      <a href="admin.html" class="drawer-link protected-nav-link" id="drawer-admin-link" style="display: none;"><span>Admin Console</span><span class="drawer-link-sub">ADMIN</span></a>
+    </nav>
+    <div class="drawer-status-card">
+      <div class="drawer-status-title">Current Entitlement Status</div>
+      <div class="drawer-status-value" id="drawer-status-value">Guest Session Unverified</div>
+      <button class="drawer-status-btn" id="drawer-reset-session">Sign Out / Lock</button>
+    </div>
+  </aside>
+
+  <!-- PAGE HERO -->
+  <section class="page-hero">
+    <div class="container">
+      <p class="page-hero-label">Travel & Stay</p>
+      <h1 class="page-hero-title">Hotel Accommodations</h1>
+      <p class="page-hero-subtitle">Official room block & nearby accommodations in Coral Gables</p>
+    </div>
+  </section>
+
+  <!-- PREFERRED HOTEL BANNER -->
+  <section class="section-padding" style="padding-bottom: 2rem;">
+    <div class="container">
+      <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-light); padding: 3.5rem 3rem; text-align: center; max-width: 900px; margin: 0 auto; position: relative;">
+        <span class="tracking-widest text-xs" style="color: var(--text-tertiary); display: block; margin-bottom: 0.75rem;">Preferred Hotel</span>
+        <h2 class="font-serif" style="font-size: 2.75rem; margin-bottom: 0.5rem;">The Biltmore Hotel</h2>
+        <p class="font-serif" style="font-size: 1.2rem; font-style: italic; color: var(--text-secondary); margin-bottom: 1.5rem;">March 26–28, 2027 — Coral Gables, Florida</p>
+        
+        <div style="display: inline-block; border-top: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light); padding: 1rem 2.5rem; margin-bottom: 2rem;">
+          <span class="tracking-widest text-xs" style="font-weight: 600; letter-spacing: 0.2em;">GROUP BLOCK #: 13634</span>
+        </div>
+
+        <p class="text-sm" style="color: var(--text-secondary); max-width: 620px; margin: 0 auto 2rem auto; line-height: 1.8;">
+          Historic Mediterranean Revival resort featuring world-class golf, luxury spa, iconic banyan courtyard, and swimming pool. Room block reserved under <strong>Levine / Nachmani</strong> (Group #13634).
+        </p>
+
+        <a href="https://www.biltmorehotel.com" target="_blank" rel="noopener" class="lookup-submit-btn" style="display: inline-block; text-decoration: none; padding: 0.9rem 2rem;">Reserve Room at The Biltmore &rarr;</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- NEARBY HOTELS SECTION -->
+  <section class="section-padding">
+    <div class="container">
+      <div style="text-align: center; margin-bottom: 3.5rem;">
+        <p class="section-label">Nearby Accommodations</p>
+        <h3 class="font-serif" style="font-size: 2.25rem;">Approximately Five Minutes by Car</h3>
+      </div>
+
+      <div class="hotel-grid">
+        <article class="hotel-card">
+          <div class="hotel-card-body">
+            <span class="hotel-card-tag">Nearby Stay • 5 Mins Away</span>
+            <h3 class="hotel-card-name">Four Points by Sheraton</h3>
+            <p class="text-xs tracking-wider" style="color: var(--text-tertiary); margin-bottom: 1rem;">CORAL GABLES</p>
+            <p class="hotel-card-desc" style="line-height: 1.7;">
+              3861 SW 40th St<br>
+              Coral Gables, FL 33146<br>
+              <span style="color: var(--text-primary); font-weight: 500;">Phone: (305) 567-0534</span>
+            </p>
+            <div class="hotel-card-footer">
+              <span class="booking-code">(305) 567-0534</span>
+              <a href="tel:3055670534" class="btn-hotel-link">Call Hotel &rarr;</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="hotel-card">
+          <div class="hotel-card-body">
+            <span class="hotel-card-tag">Nearby Stay • 5 Mins Away</span>
+            <h3 class="hotel-card-name">Courtyard by Marriott</h3>
+            <p class="text-xs tracking-wider" style="color: var(--text-tertiary); margin-bottom: 1rem;">MIAMI CORAL GABLES</p>
+            <p class="hotel-card-desc" style="line-height: 1.7;">
+              2051 S Le Jeune Rd<br>
+              Coral Gables, FL 33134<br>
+              <span style="color: var(--text-primary); font-weight: 500;">Phone: (305) 443-2301</span>
+            </p>
+            <div class="hotel-card-footer">
+              <span class="booking-code">(305) 443-2301</span>
+              <a href="tel:3054432301" class="btn-hotel-link">Call Hotel &rarr;</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="hotel-card">
+          <div class="hotel-card-body">
+            <span class="hotel-card-tag">Nearby Stay • 5 Mins Away</span>
+            <h3 class="hotel-card-name">Aloft Coral Gables</h3>
+            <p class="text-xs tracking-wider" style="color: var(--text-tertiary); margin-bottom: 1rem;">CORAL GABLES</p>
+            <p class="hotel-card-desc" style="line-height: 1.7;">
+              2524 S Le Jeune Rd<br>
+              Coral Gables, FL 33134<br>
+              <span style="color: var(--text-primary); font-weight: 500;">Phone: (305) 442-0372</span>
+            </p>
+            <div class="hotel-card-footer">
+              <span class="booking-code">(305) 442-0372</span>
+              <a href="tel:3054420372" class="btn-hotel-link">Call Hotel &rarr;</a>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div class="divider"></div>
+      <div style="text-align: center; max-width: 700px; margin: 0 auto;">
+        <h3 class="font-serif" style="font-size: 2rem; margin-bottom: 1rem;">Airport & Transportation</h3>
+        <p class="text-sm" style="color: var(--text-secondary); line-height: 1.8;">
+          <strong>Miami International Airport (MIA)</strong> is located 15 minutes north of Coral Gables.<br>
+          <strong>Fort Lauderdale-Hollywood International Airport (FLL)</strong> is located 40 minutes north.<br>
+          Continuous valet parking and rideshare pickups are available at the main Biltmore entrance.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-monogram font-serif">H & E</div>
+      <p class="footer-names">Hannah Levine & Ethan Nachmani</p>
+      <p class="footer-copy">March 26–28, 2027 — The Biltmore Hotel, Coral Gables, Florida</p>
+    </div>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

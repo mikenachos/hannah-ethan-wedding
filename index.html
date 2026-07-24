@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Private Access Gatekeeper</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body style="background-color: #FFFFFF; min-height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; padding: 2rem;">
+
+  <!-- DRAWER OVERLAY & DRAWER FOR UNLOCKED LOGIC -->
+  <div class="drawer-overlay" id="drawer-overlay"></div>
+  <aside class="slide-drawer" id="slide-drawer">
+    <div class="drawer-header">
+      <img src="assets/flower_logo.png" alt="Logo" style="height: 40px; width: auto;">
+      <button class="drawer-close-btn" id="drawer-close-btn">&times;</button>
+    </div>
+    <nav class="drawer-nav">
+      <a href="index.html" class="drawer-link active"><span>Private Entry</span><span class="drawer-link-sub">00</span></a>
+      <a href="invitation.html" class="drawer-link protected-nav-link"><span>The Invitation</span><span class="drawer-link-sub">01</span></a>
+      <a href="itinerary.html" class="drawer-link protected-nav-link"><span>Weekend Itinerary</span><span class="drawer-link-sub">02</span></a>
+      <a href="accommodations.html" class="drawer-link protected-nav-link"><span>Hotel Accommodations</span><span class="drawer-link-sub">03</span></a>
+      <a href="registry.html" class="drawer-link protected-nav-link"><span>Gift Registry</span><span class="drawer-link-sub">04</span></a>
+      <a href="rsvp.html" class="drawer-link protected-nav-link"><span>Formal RSVP</span><span class="drawer-link-sub">05</span></a>
+      <a href="admin.html" class="drawer-link protected-nav-link" id="drawer-admin-link" style="display: none;"><span>Admin Console</span><span class="drawer-link-sub">ADMIN</span></a>
+    </nav>
+    <div class="drawer-status-card">
+      <div class="drawer-status-title">Current Entitlement Status</div>
+      <div class="drawer-status-value" id="drawer-status-value">Session Locked</div>
+      <button class="drawer-status-btn" id="drawer-reset-session">Reset Session</button>
+    </div>
+  </aside>
+
+  <!-- PURE LANDING GATEKEEPER: ONLY FLOWER LOGO & EMAIL INPUT -->
+  <main style="max-width: 440px; width: 100%; text-align: center;">
+    
+    <!-- FLOWER LOGO THEME -->
+    <img src="assets/flower_logo.png" alt="Flower Logo" style="width: 100%; max-width: 260px; height: auto; display: block; margin: 0 auto 3rem auto; filter: contrast(105%);">
+
+    <!-- EMAIL ENTRY FORM -->
+    <form id="entitlement-lookup-form" style="display: flex; flex-direction: column; gap: 1rem; width: 100%;">
+      <input 
+        type="email" 
+        id="lookup-email-input" 
+        class="lookup-input" 
+        placeholder="Enter invitee email" 
+        style="width: 100%; padding: 1.1rem 1.25rem; text-align: center; font-size: 0.9rem; border: 1px solid var(--border-medium); outline: none; background-color: #FFFFFF;"
+        required
+        autofocus
+      >
+      <button type="submit" class="lookup-submit-btn" style="width: 100%; padding: 1.1rem; letter-spacing: 0.25em; font-size: 0.75rem;">
+        ENTER &rarr;
+      </button>
+    </form>
+
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

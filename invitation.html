@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Invitation — Hannah Levine & Ethan Nachmani</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- HEADER NAVIGATION WITH PERFECTLY CENTERED H & E MONOGRAM -->
+  <header class="site-header">
+    <div class="header-inner">
+      <button class="nav-toggle-btn" id="nav-toggle-btn" aria-label="Open Menu">
+        <div class="hamburger-lines">
+          <span></span>
+          <span></span>
+        </div>
+        <span>Menu</span>
+      </button>
+
+      <a href="invitation.html" class="header-monogram">H & E</a>
+
+      <div class="header-actions">
+        <button class="access-badge" id="header-access-badge">
+          <span class="badge-dot"></span>
+          <span id="badge-tier-text">INVITATION UNLOCKED</span>
+        </button>
+        <a href="rsvp.html" class="btn-rsvp-header">RSVP</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- SLIDE-OUT LEFT DRAWER -->
+  <div class="drawer-overlay" id="drawer-overlay"></div>
+  
+  <aside class="slide-drawer" id="slide-drawer">
+    <div class="drawer-header">
+      <span class="drawer-title font-serif">Hannah & Ethan</span>
+      <button class="drawer-close-btn" id="drawer-close-btn">&times;</button>
+    </div>
+
+    <nav class="drawer-nav">
+      <a href="invitation.html" class="drawer-link active">
+        <span>The Invitation</span>
+        <span class="drawer-link-sub">01</span>
+      </a>
+      <a href="itinerary.html" class="drawer-link protected-nav-link">
+        <span>Weekend Itinerary</span>
+        <span class="drawer-link-sub">02</span>
+      </a>
+      <a href="accommodations.html" class="drawer-link protected-nav-link">
+        <span>Hotel Accommodations</span>
+        <span class="drawer-link-sub">03</span>
+      </a>
+      <a href="registry.html" class="drawer-link protected-nav-link">
+        <span>Gift Registry</span>
+        <span class="drawer-link-sub">04</span>
+      </a>
+      <a href="rsvp.html" class="drawer-link protected-nav-link">
+        <span>Formal RSVP</span>
+        <span class="drawer-link-sub">05</span>
+      </a>
+      <a href="admin.html" class="drawer-link protected-nav-link" id="drawer-admin-link" style="display: none;">
+        <span>Admin Console</span>
+        <span class="drawer-link-sub">ADMIN</span>
+      </a>
+    </nav>
+
+    <div class="drawer-status-card">
+      <div class="drawer-status-title">Current Entitlement Status</div>
+      <div class="drawer-status-value" id="drawer-status-value">Guest Session Verified</div>
+      <button class="drawer-status-btn" id="drawer-reset-session">Sign Out / Lock</button>
+    </div>
+  </aside>
+
+  <!-- HERO SECTION WITH LETTERPRESS INVITATION CARD -->
+  <section class="hero-section">
+    <div class="letterpress-card">
+      <div class="letterpress-border-inner">
+        <p class="invitation-subhead">Together with their families</p>
+        
+        <h1 class="couples-names">
+          Hannah Levine
+          <span class="ampersand">&</span>
+          Ethan Nachmani
+        </h1>
+
+        <p class="invitation-body-text">
+          request the honour of your presence
+        </p>
+
+        <div class="invitation-details">
+          <p class="invitation-date">Sunday, March 28, 2027</p>
+          <p class="invitation-venue">The Biltmore Hotel — Coral Gables, Florida</p>
+          <p class="invitation-attire">Black Tie</p>
+        </div>
+
+        <p id="invitation-footer-note" class="text-xs tracking-wider" style="color: var(--text-tertiary);">
+          WEEKEND CELEBRATIONS: MARCH 26 – 28, 2027
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- EDITORIAL PHOTO BANNER -->
+  <section class="photo-banner-section">
+    <img src="assets/couple.jpg" alt="Hannah & Ethan" class="photo-banner-img">
+    <div class="photo-overlay-caption">
+      <p class="caption-quote font-serif">"Old world grandeur, candlelight, and white orchids."</p>
+      <p class="caption-meta">CORAL GABLES, FLORIDA</p>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-monogram font-serif">H & E</div>
+      <p class="footer-names">Hannah Levine & Ethan Nachmani</p>
+      <p class="footer-copy">March 26–28, 2027 — The Biltmore Hotel, Coral Gables, Florida</p>
+    </div>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

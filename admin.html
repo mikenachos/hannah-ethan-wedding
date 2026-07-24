@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Suite — Guest List Management — Hannah & Ethan Wedding</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="header-inner">
+      <button class="nav-toggle-btn" id="nav-toggle-btn">
+        <div class="hamburger-lines"><span></span><span></span></div>
+        <span>Menu</span>
+      </button>
+      <a href="index.html" class="header-monogram">H & E</a>
+      <div class="header-actions">
+        <button class="access-badge" id="header-access-badge">
+          <span class="badge-dot"></span>
+          <span id="badge-tier-text">ADMIN CONSOLE</span>
+        </button>
+        <a href="rsvp.html" class="btn-rsvp-header">RSVP</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- DRAWER -->
+  <div class="drawer-overlay" id="drawer-overlay"></div>
+  <aside class="slide-drawer" id="slide-drawer">
+    <div class="drawer-header">
+      <span class="drawer-title font-serif">Hannah & Ethan</span>
+      <button class="drawer-close-btn" id="drawer-close-btn">&times;</button>
+    </div>
+    <nav class="drawer-nav">
+      <a href="index.html" class="drawer-link"><span>The Invitation</span><span class="drawer-link-sub">01</span></a>
+      <a href="itinerary.html" class="drawer-link"><span>Weekend Itinerary</span><span class="drawer-link-sub">02</span></a>
+      <a href="accommodations.html" class="drawer-link"><span>Hotel Accommodations</span><span class="drawer-link-sub">03</span></a>
+      <a href="registry.html" class="drawer-link"><span>Gift Registry</span><span class="drawer-link-sub">04</span></a>
+      <a href="rsvp.html" class="drawer-link"><span>Formal RSVP</span><span class="drawer-link-sub">05</span></a>
+      <a href="admin.html" class="drawer-link active" id="drawer-admin-link"><span>Admin Console</span><span class="drawer-link-sub">ADMIN</span></a>
+    </nav>
+    <div class="drawer-status-card">
+      <div class="drawer-status-title">Current Entitlement Status</div>
+      <div class="drawer-status-value" id="drawer-status-value">Admin Session Active</div>
+      <button class="drawer-status-btn" id="drawer-reset-session">Switch Email / Reset</button>
+    </div>
+  </aside>
+
+  <!-- PAGE HERO -->
+  <section class="page-hero">
+    <div class="container">
+      <p class="page-hero-label">Administrative Management</p>
+      <h1 class="page-hero-title">Guest List & Entitlements</h1>
+      <p class="page-hero-subtitle">Maintain invitees, tiers, and live RSVP responses</p>
+    </div>
+  </section>
+
+  <!-- ADMIN CONTENT -->
+  <section class="section-padding">
+    <div class="container">
+      
+      <!-- STATS OVERVIEW -->
+      <div class="admin-stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Invitee Count</div>
+          <div class="stat-value" id="stat-total-guests">0</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Weekend Tier Guests</div>
+          <div class="stat-value" id="stat-weekend-count">0</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">RSVP Confirmations</div>
+          <div class="stat-value" id="stat-rsvp-accepted">0</div>
+        </div>
+      </div>
+
+      <!-- ADD GUEST FORM -->
+      <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-light); padding: 2.5rem; margin-bottom: 3rem;">
+        <h3 class="font-serif" style="font-size: 1.75rem; margin-bottom: 1.5rem;">Add New Invitee</h3>
+        
+        <form id="add-guest-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) 140px; gap: 1rem; align-items: flex-end;">
+          <div>
+            <label class="tracking-wider text-xs" style="display:block; margin-bottom: 0.35rem;">Guest Name</label>
+            <input type="text" id="new-guest-name" class="lookup-input" style="width:100%;" placeholder="Full Name(s)" required>
+          </div>
+
+          <div>
+            <label class="tracking-wider text-xs" style="display:block; margin-bottom: 0.35rem;">Email Address</label>
+            <input type="email" id="new-guest-email" class="lookup-input" style="width:100%;" placeholder="guest@domain.com" required>
+          </div>
+
+          <div>
+            <label class="tracking-wider text-xs" style="display:block; margin-bottom: 0.35rem;">Entitlement Tier</label>
+            <select id="new-guest-tier" class="lookup-input" style="width:100%;">
+              <option value="weekend">Weekend Tier</option>
+              <option value="wedding_only">Wedding Day Only</option>
+              <option value="admin">Admin Tier</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="tracking-wider text-xs" style="display:block; margin-bottom: 0.35rem;">Note / Group</label>
+            <input type="text" id="new-guest-note" class="lookup-input" style="width:100%;" placeholder="e.g. Family / VIP">
+          </div>
+
+          <button type="submit" class="btn-admin-action" style="height: 42px;">+ Add Guest</button>
+        </form>
+      </div>
+
+      <!-- CONTROLS & TABLE HEADER -->
+      <div class="admin-controls-bar">
+        <h3 class="font-serif" style="font-size: 2rem;">Invitee Database</h3>
+        <button class="btn-admin-outline" id="export-csv-btn">↓ Export CSV Report</button>
+      </div>
+
+      <!-- GUEST TABLE -->
+      <div class="admin-table-container">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Invitee Name</th>
+              <th>Email</th>
+              <th>Tier</th>
+              <th>RSVP Status</th>
+              <th>Notes</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="admin-guest-table-body">
+            <!-- Rendered dynamically by app.js -->
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-monogram font-serif">H & E</div>
+      <p class="footer-names">Hannah Levine & Ethan Nachmani</p>
+      <p class="footer-copy">March 26–28, 2027 — The Biltmore Hotel, Coral Gables, Florida</p>
+    </div>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
