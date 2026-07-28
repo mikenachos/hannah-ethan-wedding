@@ -176,12 +176,12 @@ function initEntitlementLookup() {
   }
 
   if (lookupForm) {
-    lookupForm.addEventListener('submit', (e) => {
+    lookupForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const inputVal = lookupInput.value.trim();
       if (!inputVal) return;
 
-      const result = lookupGuestEntitlement(inputVal);
+      const result = await lookupGuestEntitlement(inputVal);
 
       if (result.found) {
         currentGuestState = {
