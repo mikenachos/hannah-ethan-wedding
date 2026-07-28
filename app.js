@@ -513,7 +513,7 @@ function initAdminConsole() {
   const csvPasteArea = document.getElementById('csv-paste-area');
 
   if (addGuestForm) {
-    addGuestForm.addEventListener('submit', (e) => {
+    addGuestForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const firstName = document.getElementById('new-guest-first').value.trim();
       const lastName = document.getElementById('new-guest-last').value.trim();
@@ -523,7 +523,7 @@ function initAdminConsole() {
       const tier = document.getElementById('new-guest-tier').value;
       const note = document.getElementById('new-guest-note').value.trim();
 
-      const res = addGuest({ 
+      const res = await addGuest({ 
         firstName, 
         lastName, 
         name: `${firstName} ${lastName}`, 
@@ -538,8 +538,8 @@ function initAdminConsole() {
       if (res.success) {
         showToast(`ADDED GUEST: ${firstName.toUpperCase()} ${lastName.toUpperCase()}`);
         addGuestForm.reset();
-        renderAdminStats();
-        renderAdminTable();
+        await renderAdminStats();
+        await renderAdminTable();
       } else {
         showToast(`ERROR: ${res.message.toUpperCase()}`);
       }
@@ -551,7 +551,7 @@ function initAdminConsole() {
   }
 
   if (importCsvBtn && csvPasteArea) {
-    importCsvBtn.addEventListener('click', () => {
+    importCsvBtn.addEventListener('click', async () => {
       const csvText = csvPasteArea.value;
 
       if (!csvText.trim()) {
@@ -559,12 +559,12 @@ function initAdminConsole() {
         return;
       }
 
-      const res = importGuestsFromCSV(csvText);
+      const res = await importGuestsFromCSV(csvText);
       if (res.success) {
         showToast(res.message.toUpperCase());
         csvPasteArea.value = '';
-        renderAdminStats();
-        renderAdminTable();
+        await renderAdminStats();
+        await renderAdminTable();
       } else {
         showToast(`ERROR: ${res.message.toUpperCase()}`);
       }
@@ -612,9 +612,9 @@ function initAdminConsole() {
   }
 }
 
-function renderAdminStats() {
-  const list = getGuestList();
-  const rsvps = getRsvpList();
+async function renderAdminStats() {
+  const list = await getGuestList();
+  const rsvps = await getRsvpList();
 
   const totalGuestsEl = document.getElementById('stat-total-guests');
   const weekendCountEl = document.getElementById('stat-weekend-count');
@@ -625,12 +625,12 @@ function renderAdminStats() {
   if (rsvpAcceptedEl) rsvpAcceptedEl.textContent = rsvps.filter(r => r.attendance === 'accept').length;
 }
 
-function renderAdminTable() {
+async function renderAdminTable() {
   const tbody = document.getElementById('admin-guest-table-body');
   if (!tbody) return;
 
-  const list = getGuestList();
-  const rsvps = getRsvpList();
+  const list = await getGuestList();
+  const rsvps = await getRsvpList();
   tbody.innerHTML = '';
 
   list.forEach(guest => {
@@ -704,23 +704,23 @@ function renderAdminTable() {
 
   // Attach Edit action listeners
   document.querySelectorAll('.btn-table-action.edit').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', async (e) => {
       editingIdentifier = e.target.getAttribute('data-identifier');
-      renderAdminTable();
+      await renderAdminTable();
     });
   });
 
   // Attach Cancel action listeners
   document.querySelectorAll('.btn-table-action.cancel').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       editingIdentifier = null;
-      renderAdminTable();
+      await renderAdminTable();
     });
   });
 
   // Attach Save action listeners
   document.querySelectorAll('.btn-table-action.save').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', async (e) => {
       const identifier = e.target.getAttribute('data-identifier');
       const row = e.target.closest('tr');
 
@@ -761,12 +761,12 @@ function renderAdminTable() {
         address
       };
 
-      const res = updateGuestDirectly(identifier, updatedData);
+      const res = await updateGuestDirectly(identifier, updatedData);
       if (res.success) {
         showToast('GUEST INFORMATION UPDATED');
         editingIdentifier = null;
-        renderAdminStats();
-        renderAdminTable();
+        await renderAdminStats();
+        await renderAdminTable();
       } else {
         showToast(`ERROR: ${res.message.toUpperCase()}`);
       }
@@ -775,21 +775,21 @@ function renderAdminTable() {
 
   // Attach Delete action listeners
   document.querySelectorAll('.btn-table-action.delete').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', async (e) => {
       const identifier = e.target.getAttribute('data-identifier');
       if (confirm(`Remove ${identifier} from guest database?`)) {
-        deleteGuest(identifier);
-        renderAdminStats();
-        renderAdminTable();
+        await deleteGuest(identifier);
+        await renderAdminStats();
+        await renderAdminTable();
         showToast(`DELETED GUEST: ${identifier}`);
       }
     });
   });
 }
 
-function exportGuestListCSV() {
-  const list = getGuestList();
-  const rsvps = getRsvpList();
+async function exportGuestListCSV() {
+  const list = await getGuestList();
+  const rsvps = await getRsvpList();
 
   let csv = 'Household,First_Name,Last_Name,Email,Mobile,Street,Suite,City,State,Zip,Country,Tier,Note,RSVP_Status,Meal_Selection,Dietary_Notes\n';
 
@@ -855,11 +855,11 @@ function checkContactInfoModal() {
   }
 }
 
-function showContactCollectionModal() {
+async function showContactCollectionModal() {
   // Prevent double rendering
   if (document.getElementById('contact-collection-modal')) return;
 
-  const list = getGuestList();
+  const list = await getGuestList();
   const householdId = currentGuestState.household;
   const members = list.filter(g => g.household && g.household === householdId);
   
@@ -1054,7 +1054,7 @@ function showContactCollectionModal() {
 
   // Handle Form Submission
   const form = windowEl.querySelector('#contact-collection-form');
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const address = {
@@ -1110,7 +1110,7 @@ function showContactCollectionModal() {
       return;
     }
 
-    const updated = updateHouseholdInfo(householdId, address, updatedMembers);
+    const updated = await updateHouseholdInfo(householdId, address, updatedMembers);
 
     // Update current guest state
     currentGuestState.infoCompleted = true;

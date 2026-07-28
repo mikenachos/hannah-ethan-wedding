@@ -1,70 +1,8 @@
-/**
- * GUEST ENTITLEMENT DATABASE & ADMIN MANAGEMENT ENGINE
- * Hannah Levine & Ethan Nachmani — March 26–28, 2027
- * The Biltmore Hotel, Coral Gables
- */
-
 export const GUEST_TIERS = {
   ADMIN: 'admin',
   WEEKEND: 'weekend',
   WEDDING_ONLY: 'wedding_only'
 };
-
-const INITIAL_INVITEES_DATABASE = [
-  // Admin Tier Invites
-  {
-    firstName: 'Hannah',
-    lastName: 'Levine',
-    name: 'Hannah Levine',
-    email: 'hannah@example.com',
-    mobile: '',
-    household: 'Levine-Nachmani',
-    tier: GUEST_TIERS.ADMIN,
-    plusOne: true,
-    note: 'Bride & Admin',
-    address: { street: '', suite: '', city: '', state: '', zip: '', country: 'US' },
-    infoCompleted: false
-  },
-  {
-    firstName: 'Ethan',
-    lastName: 'Nachmani',
-    name: 'Ethan Nachmani',
-    email: 'ethan@example.com',
-    mobile: '',
-    household: 'Levine-Nachmani',
-    tier: GUEST_TIERS.ADMIN,
-    plusOne: true,
-    note: 'Groom & Admin',
-    address: { street: '', suite: '', city: '', state: '', zip: '', country: 'US' },
-    infoCompleted: false
-  },
-  {
-    firstName: 'System',
-    lastName: 'Admin',
-    name: 'Hannah & Ethan (Admin)',
-    email: 'admin@biltmore.com',
-    mobile: '',
-    household: 'Biltmore-Admins',
-    tier: GUEST_TIERS.ADMIN,
-    plusOne: true,
-    note: 'System Admin',
-    address: { street: '', suite: '', city: '', state: '', zip: '', country: 'US' },
-    infoCompleted: false
-  },
-  {
-    firstName: 'Ethan & Hannah',
-    lastName: 'Admin',
-    name: 'Ethan & Hannah (Admin)',
-    email: 'admin@nachmani.com',
-    mobile: '',
-    household: 'Nachmani-Admins',
-    tier: GUEST_TIERS.ADMIN,
-    plusOne: true,
-    note: 'System Admin',
-    address: { street: '', suite: '', city: '', state: '', zip: '', country: 'US' },
-    infoCompleted: false
-  }
-];
 
 export const EVENTS_LIST = [
   {
@@ -87,19 +25,19 @@ export const EVENTS_LIST = [
     title: 'Rehearsal Dinner & Poolside Soirée',
     venue: 'The Cascades & Private Cabana Lawn',
     location: 'The Biltmore Hotel, Coral Gables',
-    attire: 'Elevated Evening Wear',
-    description: 'An intimate candlelit dinner featuring Mediterranean cuisine, heartfelt toasts, and evening lounge music overlooking the iconic Biltmore pool.',
+    attire: 'Warm-Weather Black Tie (Optional)',
+    description: 'An intimate candlelit dining experience framing the historic Biltmore pool, dedicated to toasts, family stories, and fine wine.',
     tierRequired: GUEST_TIERS.WEEKEND
   },
   {
-    id: 'wedding_ceremony_reception',
+    id: 'marriage_ceremony',
     day: 'Sunday',
     date: 'March 28, 2027',
-    time: '5:00 PM – Late',
-    title: 'Wedding Ceremony & Black-Tie Gala',
-    venue: 'The Country Club Ballroom & Terrace',
+    time: '5:00 PM – 11:30 PM',
+    title: 'The Marriage Ceremony & Wedding Banquet',
+    venue: 'The Country Club Ballroom & Loggia',
     location: 'The Biltmore Hotel, Coral Gables',
-    attire: 'Black Tie (Tuxedos & Floor-Length Gowns)',
+    attire: 'Black Tie / Formal',
     description: 'The marriage ceremony of Hannah Levine and Ethan Nachmani, followed by a formal cocktail hour on the Loggia, multi-course seated banquet dinner, and dancing under the chandeliers.',
     tierRequired: GUEST_TIERS.WEDDING_ONLY
   },
@@ -123,128 +61,67 @@ export function normalizePhone(phone) {
   return phone.toString().replace(/\D/g, '');
 }
 
-/* Helper to get guest list with LocalStorage persistence */
-export function getGuestList() {
-  const stored = localStorage.getItem('hannah_ethan_guest_db');
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored);
-      // Auto-migrate: reset storage if it contains old flat schema without household mapping
-      if (parsed.length > 0 && parsed[0].household === undefined) {
-        console.warn('Old schema detected. Resetting guest database.');
-        localStorage.removeItem('hannah_ethan_guest_db');
-        localStorage.removeItem('hannah_ethan_guest');
-        localStorage.removeItem('hannah_ethan_rsvp_db');
-        localStorage.setItem('hannah_ethan_guest_db', JSON.stringify(INITIAL_INVITEES_DATABASE));
-        return INITIAL_INVITEES_DATABASE;
-      } else {
-        // Dynamic Sync: merge any entries in code's initial list that are missing in LocalStorage
-        let modified = false;
-        INITIAL_INVITEES_DATABASE.forEach(initG => {
-          const exists = parsed.some(g => 
-            (initG.email && g.email && g.email.toLowerCase() === initG.email.toLowerCase()) ||
-            (initG.mobile && g.mobile && normalizePhone(g.mobile) === normalizePhone(initG.mobile))
-          );
-          if (!exists) {
-            parsed.push(initG);
-            modified = true;
-          }
-        });
-        if (modified) {
-          localStorage.setItem('hannah_ethan_guest_db', JSON.stringify(parsed));
-        }
-        return parsed;
-      }
-    } catch (e) {
-      console.error('Failed to parse guest list', e);
+/* Helper to get guest list with HTTP fetch */
+export async function getGuestList() {
+  try {
+    const res = await fetch('/api/guests');
+    if (res.ok) {
+      return await res.json();
     }
+  } catch (e) {
+    console.error('Failed to fetch guest list', e);
   }
-  // Initialize default
-  localStorage.setItem('hannah_ethan_guest_db', JSON.stringify(INITIAL_INVITEES_DATABASE));
-  return INITIAL_INVITEES_DATABASE;
+  return [];
 }
 
 export function saveGuestList(list) {
-  localStorage.setItem('hannah_ethan_guest_db', JSON.stringify(list));
+  // Deprecated client-side, handled by backend API.
+  console.warn('saveGuestList is deprecated on client side.');
 }
 
-export function addGuest(newGuest) {
-  const list = getGuestList();
-  
-  // Validation for duplicate emails
-  if (newGuest.email) {
-    const emailExists = list.some(g => g.email && g.email.toLowerCase() === newGuest.email.toLowerCase());
-    if (emailExists) {
-      return { success: false, message: 'A guest with this email already exists.' };
-    }
+export async function addGuest(newGuest) {
+  try {
+    const res = await fetch('/api/guests/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newGuest)
+    });
+    return await res.json();
+  } catch (e) {
+    console.error('Failed to add guest', e);
+    return { success: false, message: e.message };
   }
-  
-  // Validation for duplicate phones
-  if (newGuest.mobile) {
-    const cleanNewMobile = normalizePhone(newGuest.mobile);
-    const phoneExists = list.some(g => g.mobile && normalizePhone(g.mobile) === cleanNewMobile);
-    if (phoneExists) {
-      return { success: false, message: 'A guest with this mobile number already exists.' };
-    }
-  }
-
-  const defaultAddr = { street: '', suite: '', city: '', state: '', zip: '', country: 'US' };
-
-  // If there are existing members in this household, sync their address
-  const householdMembers = list.filter(g => g.household && g.household === newGuest.household);
-  const syncedAddress = householdMembers.length > 0 ? { ...householdMembers[0].address } : defaultAddr;
-
-  const addedGuest = {
-    firstName: newGuest.firstName || '',
-    lastName: newGuest.lastName || '',
-    name: newGuest.name || `${newGuest.firstName} ${newGuest.lastName}`,
-    email: newGuest.email || '',
-    mobile: newGuest.mobile || '',
-    household: newGuest.household || 'Single',
-    tier: newGuest.tier || GUEST_TIERS.WEEKEND,
-    plusOne: newGuest.plusOne || false,
-    note: newGuest.note || '',
-    address: syncedAddress,
-    infoCompleted: newGuest.infoCompleted || false
-  };
-
-  list.push(addedGuest);
-  saveGuestList(list);
-  return { success: true, guest: addedGuest };
 }
 
-export function deleteGuest(emailOrMobile) {
-  let list = getGuestList();
-  const cleanTerm = emailOrMobile.trim().toLowerCase();
+export async function deleteGuest(identifier) {
+  try {
+    const res = await fetch('/api/guests/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier })
+    });
+    return await res.json();
+  } catch (e) {
+    console.error('Failed to delete guest', e);
+    return { success: false, message: e.message };
+  }
+}
+
+/* Helper to perform dynamic security lookup via email or phone */
+export async function lookupGuestEntitlement(inputTerm) {
+  const list = await getGuestList();
+  const cleanTerm = inputTerm.trim().toLowerCase();
   const cleanPhone = normalizePhone(cleanTerm);
 
-  list = list.filter(g => {
-    if (g.email && g.email.toLowerCase() === cleanTerm) return false;
-    if (g.mobile && normalizePhone(g.mobile) === cleanPhone && cleanPhone !== '') return false;
-    // Fallback: match by full name if term contains no email or phone match
-    if (g.name.toLowerCase() === cleanTerm) return false;
-    return true;
-  });
-
-  saveGuestList(list);
-  return { success: true };
-}
-
-export function lookupGuestEntitlement(input) {
-  if (!input) return null;
-  const cleanInput = input.trim().toLowerCase();
-  const cleanPhone = normalizePhone(cleanInput);
-  
-  const list = getGuestList();
-  
-  const foundGuest = list.find(g => {
-    if (g.email && g.email.toLowerCase() === cleanInput) return true;
-    if (g.mobile && normalizePhone(g.mobile) === cleanPhone && cleanPhone.length >= 7) return true;
-    return false;
-  });
+  // Check administrators list
+  const foundGuest = list.find(g => 
+    (g.email && g.email.toLowerCase() === cleanTerm) ||
+    (g.mobile && normalizePhone(g.mobile) === cleanPhone && cleanPhone !== '')
+  );
 
   if (foundGuest) {
-    const householdMembers = list.filter(g => g.household && g.household === foundGuest.household);
+    // If the guest is found, filter all guests belonging to the same household
+    const householdMembers = list.filter(g => g.household === foundGuest.household);
     return {
       found: true,
       guest: foundGuest,
@@ -263,78 +140,45 @@ export function lookupGuestEntitlement(input) {
   };
 }
 
-export function updateHouseholdInfo(householdId, address, updatedMembers) {
-  const list = getGuestList();
-  
-  const updatedList = list.map(g => {
-    if (g.household === householdId) {
-      // Find matching member in the form input list by name
-      const match = updatedMembers.find(m => 
-        (m.firstName.toLowerCase() === g.firstName.toLowerCase() && m.lastName.toLowerCase() === g.lastName.toLowerCase())
-      ) || {};
-      
-      return {
-        ...g,
-        firstName: match.firstName !== undefined ? match.firstName : g.firstName,
-        lastName: match.lastName !== undefined ? match.lastName : g.lastName,
-        name: `${match.firstName || g.firstName} ${match.lastName || g.lastName}`,
-        email: match.email !== undefined ? match.email : g.email,
-        mobile: match.mobile !== undefined ? match.mobile : g.mobile,
-        address: { ...address },
-        infoCompleted: true
-      };
+export async function updateHouseholdInfo(householdId, address, updatedMembers) {
+  try {
+    const res = await fetch('/api/household/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ householdId, address, updatedMembers })
+    });
+    const result = await res.json();
+    if (result.success) {
+      return result.guests;
     }
-    return g;
-  });
-
-  saveGuestList(updatedList);
-  return updatedList.filter(g => g.household === householdId);
+  } catch (e) {
+    console.error('Failed to update household info', e);
+  }
+  return [];
 }
 
-export function updateGuestDirectly(originalIdentifier, updatedGuestData) {
-  const list = getGuestList();
-  const cleanTerm = originalIdentifier.trim().toLowerCase();
-  const cleanPhone = normalizePhone(cleanTerm);
-
-  const idx = list.findIndex(g => 
-    (g.email && g.email.toLowerCase() === cleanTerm) ||
-    (g.mobile && normalizePhone(g.mobile) === cleanPhone && cleanPhone !== '') ||
-    (g.name.toLowerCase() === cleanTerm)
-  );
-
-  if (idx !== -1) {
-    const originalGuest = list[idx];
-    const newGuest = {
-      ...originalGuest,
-      ...updatedGuestData,
-      name: `${updatedGuestData.firstName !== undefined ? updatedGuestData.firstName : originalGuest.firstName} ${updatedGuestData.lastName !== undefined ? updatedGuestData.lastName : originalGuest.lastName}`
-    };
-
-    list[idx] = newGuest;
-
-    // Sync household addresses if updated
-    if (updatedGuestData.address) {
-      list.forEach((g, i) => {
-        if (g.household === newGuest.household) {
-          list[i].address = { ...newGuest.address };
-        }
-      });
-    }
-
-    saveGuestList(list);
-    return { success: true, guest: newGuest };
+export async function updateGuestDirectly(originalIdentifier, updatedGuestData) {
+  try {
+    const res = await fetch('/api/guests/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ originalIdentifier, updatedGuestData })
+    });
+    return await res.json();
+  } catch (e) {
+    console.error('Failed to update guest directly', e);
+    return { success: false, message: e.message };
   }
-  return { success: false, message: 'Guest not found' };
 }
 
 /* CSV Import Engine */
-export function importGuestsFromCSV(csvText) {
+export async function importGuestsFromCSV(csvText) {
   const lines = csvText.split('\n');
   if (lines.length === 0 || (lines.length === 1 && !lines[0].trim())) {
     return { success: false, message: 'No data found' };
   }
 
-  const list = getGuestList();
+  const list = await getGuestList();
   let importCount = 0;
   let skippedCount = 0;
 
@@ -468,56 +312,44 @@ export function importGuestsFromCSV(csvText) {
   }
 
   if (newGuests.length > 0) {
-    const updatedList = [...list, ...newGuests];
-    saveGuestList(updatedList);
-    return { success: true, message: `Successfully imported ${importCount} guests. Skipped ${skippedCount} duplicates/invalid rows.` };
+    try {
+      const res = await fetch('/api/admin/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newGuests })
+      });
+      return await res.json();
+    } catch (e) {
+      console.error('Failed to import guests', e);
+      return { success: false, message: e.message };
+    }
   }
 
   return { success: false, message: `No new guests were imported. Skipped ${skippedCount} rows.` };
 }
 
-/* RSVP Responses Storage */
-const INITIAL_RSVP_LIST = [
-  {
-    email: 'weekend@biltmore.com',
-    name: 'Alexandra & Harrison Vance',
-    attendance: 'accept',
-    tier: 'weekend',
-    meal: 'seabass',
-    dietary: 'No shellfish',
-    timestamp: '2026-07-20T14:30:00Z'
-  },
-  {
-    email: 'wedding@biltmore.com',
-    name: 'David & Catherine Miller',
-    attendance: 'accept',
-    tier: 'wedding_only',
-    meal: 'beef',
-    dietary: 'Gluten free',
-    timestamp: '2026-07-22T09:15:00Z'
-  }
-];
-
-export function getRsvpList() {
-  const stored = localStorage.getItem('hannah_ethan_rsvp_db');
-  if (stored) {
-    try {
-      return JSON.parse(stored);
-    } catch (e) {
-      console.error('Failed to parse rsvp list', e);
+export async function getRsvpList() {
+  try {
+    const res = await fetch('/api/rsvps');
+    if (res.ok) {
+      return await res.json();
     }
+  } catch (e) {
+    console.error('Failed to fetch RSVP list', e);
   }
-  localStorage.setItem('hannah_ethan_rsvp_db', JSON.stringify(INITIAL_RSVP_LIST));
-  return INITIAL_RSVP_LIST;
+  return [];
 }
 
-export function saveRsvp(rsvpData) {
-  const list = getRsvpList();
-  const index = list.findIndex(r => r.email.toLowerCase() === rsvpData.email.toLowerCase());
-  if (index >= 0) {
-    list[index] = { ...rsvpData, timestamp: new Date().toISOString() };
-  } else {
-    list.push({ ...rsvpData, timestamp: new Date().toISOString() });
+export async function saveRsvp(rsvpData) {
+  try {
+    const res = await fetch('/api/rsvp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(rsvpData)
+    });
+    return await res.json();
+  } catch (e) {
+    console.error('Failed to save RSVP', e);
+    return { success: false, message: e.message };
   }
-  localStorage.setItem('hannah_ethan_rsvp_db', JSON.stringify(list));
 }
