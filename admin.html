@@ -53,7 +53,7 @@
     <div class="container">
       <p class="page-hero-label">Administrative Management</p>
       <h1 class="page-hero-title">Guest List & Entitlements</h1>
-      <p class="page-hero-subtitle">Maintain invitees, tiers, and live RSVP responses</p>
+      <p class="page-hero-subtitle">Maintain invitees, households, addresses, and live RSVP responses</p>
     </div>
   </section>
 
@@ -79,24 +79,66 @@
         </div>
       </div>
 
+      <!-- SECTION VISIBILITY CONTROLS -->
+      <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-light); padding: 2.5rem; margin-bottom: 3rem;">
+        <h3 class="font-serif" style="font-size: 1.75rem; margin-bottom: 1rem;">Section Visibility Controls</h3>
+        <p class="text-xs" style="color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.6;">
+          Enable or disable sections of the wedding website. Disabled sections will be hidden from the menu tray for guests, and direct URL access will be redirected back to the invitation page. Admins can always see and test all pages.
+        </p>
+        
+        <div style="display: flex; gap: 2rem; flex-wrap: wrap; margin-top: 1rem;">
+          <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; user-select: none;">
+            <input type="checkbox" id="toggle-itinerary" style="cursor: pointer; width: 16px; height: 16px;">
+            <span>Weekend Itinerary</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; user-select: none;">
+            <input type="checkbox" id="toggle-accommodations" style="cursor: pointer; width: 16px; height: 16px;">
+            <span>Hotel Accommodations</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; user-select: none;">
+            <input type="checkbox" id="toggle-registry" style="cursor: pointer; width: 16px; height: 16px;">
+            <span>Gift Registry</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; user-select: none;">
+            <input type="checkbox" id="toggle-rsvp" style="cursor: pointer; width: 16px; height: 16px;">
+            <span>Formal RSVP</span>
+          </label>
+        </div>
+      </div>
+
       <!-- ADD GUEST FORM -->
       <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-light); padding: 2.5rem; margin-bottom: 3rem;">
         <h3 class="font-serif" style="font-size: 1.75rem; margin-bottom: 1.5rem;">Add New Invitee</h3>
         
-        <form id="add-guest-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) 140px; gap: 1rem; align-items: flex-end;">
+        <form id="add-guest-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1.25rem; align-items: flex-end;">
           <div>
-            <label class="tracking-wider text-xs" style="display:block; margin-bottom: 0.35rem;">Guest Name</label>
-            <input type="text" id="new-guest-name" class="lookup-input" style="width:100%;" placeholder="Full Name(s)" required>
+            <label class="tracking-wider text-xs" style="display:block; margin-bottom: 0.35rem;">First Name</label>
+            <input type="text" id="new-guest-first" class="lookup-input" style="width:100%; text-align: left;" placeholder="First" required>
+          </div>
+
+          <div>
+            <label class="tracking-wider text-xs" style="display:block; margin-bottom: 0.35rem;">Last Name</label>
+            <input type="text" id="new-guest-last" class="lookup-input" style="width:100%; text-align: left;" placeholder="Last" required>
           </div>
 
           <div>
             <label class="tracking-wider text-xs" style="display:block; margin-bottom: 0.35rem;">Email Address</label>
-            <input type="email" id="new-guest-email" class="lookup-input" style="width:100%;" placeholder="guest@domain.com" required>
+            <input type="email" id="new-guest-email" class="lookup-input" style="width:100%; text-align: left;" placeholder="guest@domain.com">
+          </div>
+
+          <div>
+            <label class="tracking-wider text-xs" style="display:block; margin-bottom: 0.35rem;">Mobile Phone</label>
+            <input type="text" id="new-guest-mobile" class="lookup-input" style="width:100%; text-align: left;" placeholder="917-555-5555">
+          </div>
+
+          <div>
+            <label class="tracking-wider text-xs" style="display:block; margin-bottom: 0.35rem;">Household ID</label>
+            <input type="text" id="new-guest-household" class="lookup-input" style="width:100%; text-align: left;" placeholder="e.g. Rivkin-Nachmani" required>
           </div>
 
           <div>
             <label class="tracking-wider text-xs" style="display:block; margin-bottom: 0.35rem;">Entitlement Tier</label>
-            <select id="new-guest-tier" class="lookup-input" style="width:100%;">
+            <select id="new-guest-tier" class="lookup-input" style="width:100%; height: 42px;">
               <option value="weekend">Weekend Tier</option>
               <option value="wedding_only">Wedding Day Only</option>
               <option value="admin">Admin Tier</option>
@@ -105,11 +147,30 @@
 
           <div>
             <label class="tracking-wider text-xs" style="display:block; margin-bottom: 0.35rem;">Note / Group</label>
-            <input type="text" id="new-guest-note" class="lookup-input" style="width:100%;" placeholder="e.g. Family / VIP">
+            <input type="text" id="new-guest-note" class="lookup-input" style="width:100%; text-align: left;" placeholder="e.g. Family / VIP">
           </div>
 
-          <button type="submit" class="btn-admin-action" style="height: 42px;">+ Add Guest</button>
+          <div style="grid-column: 1 / -1; text-align: right; margin-top: 0.5rem;">
+            <button type="submit" class="btn-admin-action" style="height: 42px; padding: 0 2rem;">+ Add Guest</button>
+          </div>
         </form>
+      </div>
+
+      <!-- CSV PASTE IMPORT -->
+      <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-light); padding: 2.5rem; margin-bottom: 3rem;">
+        <h3 class="font-serif" style="font-size: 1.75rem; margin-bottom: 1rem;">Bulk Import Guests (CSV)</h3>
+        <p class="text-xs" style="color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.6;">
+          Paste raw CSV data to import guests in bulk. The CSV format must include the columns: <strong>Household,First,Last,email,mobile,tier</strong>. The tier values should be <code>weekend</code>, <code>wedding_only</code>, or <code>admin</code>.<br>
+          Example:<br>
+          <code>Household,First,Last,email,mobile,tier<br>
+          Rivkin-Nachmani,David,Rivkin,,917-885-5708,weekend<br>
+          Rivkin-Nachmani,Stacey,Rivkin,sirivkin@gmail.com,,weekend</code>
+        </p>
+        <textarea id="csv-paste-area" class="lookup-input" style="width: 100%; height: 120px; font-family: monospace; font-size: 0.8rem; margin-bottom: 1.5rem; text-align: left; background-color: #FFFFFF;" placeholder="Household,First,Last,email,mobile,tier"></textarea>
+        
+        <div style="display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap;">
+          <button id="btn-import-csv" class="btn-admin-action" style="height: 38px; padding: 0 1.5rem;">Import CSV Data</button>
+        </div>
       </div>
 
       <!-- CONTROLS & TABLE HEADER -->
@@ -123,11 +184,14 @@
         <table class="admin-table">
           <thead>
             <tr>
+              <th>Household</th>
               <th>Invitee Name</th>
               <th>Email</th>
+              <th>Mobile</th>
+              <th>Mailing Address</th>
               <th>Tier</th>
               <th>RSVP Status</th>
-              <th>Notes</th>
+              <th>Info?</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -147,7 +211,7 @@
       <p class="footer-names">Hannah Levine & Ethan Nachmani</p>
       <p class="footer-copy">March 26–28, 2027 — The Biltmore Hotel, Coral Gables, Florida</p>
     </div>
-  </footer>
+  </header>
 
   <script type="module" src="app.js"></script>
 </body>

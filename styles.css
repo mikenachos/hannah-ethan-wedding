@@ -169,7 +169,7 @@ h1, h2, h3, h4, .font-serif {
 }
 
 .access-badge {
-  display: inline-flex;
+  display: none;
   align-items: center;
   gap: 0.5rem;
   padding: 0.35rem 0.85rem;
@@ -194,6 +194,7 @@ h1, h2, h3, h4, .font-serif {
 }
 
 .btn-rsvp-header {
+  display: none;
   background-color: var(--text-primary);
   color: var(--bg-primary);
   border: 1px solid var(--text-primary);
@@ -952,3 +953,240 @@ h1, h2, h3, h4, .font-serif {
   .registry-grid { grid-template-columns: 1fr; }
   .header-actions .access-badge { display: none; }
 }
+
+/* ==========================================================================
+   BLOCKING HOUSEHOLD MODAL STYLING
+   ========================================================================== */
+
+.contact-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(10, 10, 10, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-smooth), visibility var(--transition-smooth);
+}
+
+.contact-modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.contact-modal-window {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-medium);
+  outline: 8px solid #FAF9F6;
+  max-width: 720px;
+  width: 90%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.15);
+  position: relative;
+  animation: modalFadeIn var(--transition-smooth);
+  overflow: hidden;
+}
+
+.contact-modal-window form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+@keyframes modalFadeIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.contact-modal-header {
+  padding: 2.5rem 3rem 1.5rem 3rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.contact-modal-title {
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.contact-modal-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 580px;
+  margin: 0 auto;
+}
+
+.contact-modal-body {
+  padding: 2.5rem 3rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.contact-modal-section-title {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--text-primary);
+  padding-bottom: 0.35rem;
+  display: inline-block;
+}
+
+/* Form Grids */
+.form-grid-address {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
+}
+
+.form-grid-address .full-width {
+  grid-column: span 2;
+}
+
+.form-grid-address-3col {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.form-group label {
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* Custom Horizontal Tabs */
+.household-tabs-nav {
+  display: flex;
+  gap: 1.5rem;
+  border-bottom: 1px solid var(--border-light);
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.household-tabs-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.household-tab-btn {
+  background: transparent;
+  border: none;
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  padding: 0.5rem 0.5rem 0.75rem 0.5rem;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  border-bottom: 2px solid transparent;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.household-tab-btn:hover {
+  color: var(--text-primary);
+}
+
+.household-tab-btn.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--text-primary);
+  font-weight: 500;
+}
+
+.household-tab-panel {
+  display: none;
+}
+
+.household-tab-panel.active {
+  display: block;
+  animation: panelFade 0.3s ease;
+}
+
+@keyframes panelFade {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.form-grid-member {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+/* Country Phone Input Combo */
+.phone-input-combo {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.phone-country-select {
+  width: 90px;
+  padding: 0.85rem 0.5rem;
+  border: 1px solid var(--border-medium);
+  background-color: var(--bg-primary);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.contact-modal-footer {
+  padding: 2rem 3rem 2.5rem 3rem;
+  border-top: 1px solid var(--border-light);
+  background-color: var(--bg-secondary);
+  text-align: center;
+}
+
+.contact-modal-submit-btn {
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+  border: 1px solid var(--text-primary);
+  padding: 1.1rem 3rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  cursor: pointer;
+  width: 100%;
+  max-width: 320px;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.contact-modal-submit-btn:hover {
+  background-color: transparent;
+  color: var(--text-primary);
+}
+
+@media (max-width: 600px) {
+  .contact-modal-window { width: 95%; max-height: 95vh; }
+  .contact-modal-header { padding: 1.5rem; }
+  .contact-modal-body { padding: 1.5rem; }
+  .contact-modal-footer { padding: 1.5rem; }
+  .form-grid-address { grid-template-columns: 1fr; }
+  .form-grid-address .full-width { grid-column: span 1; }
+  .form-grid-address-3col { grid-template-columns: 1fr; }
+  .form-grid-member { grid-template-columns: 1fr; }
+}
+

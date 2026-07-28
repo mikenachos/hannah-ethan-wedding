@@ -12,17 +12,29 @@ import {
   addGuest, 
   deleteGuest, 
   getRsvpList, 
-  saveRsvp 
+  saveRsvp,
+  updateHouseholdInfo,
+  normalizePhone,
+  importGuestsFromCSV,
+  updateGuestDirectly
 } from './invitees.js';
 
 // Application State
 let currentGuestState = {
   authenticated: false,
-  email: '',
+  firstName: '',
+  lastName: '',
   name: '',
+  email: '',
+  mobile: '',
+  household: '',
   tier: GUEST_TIERS.WEEKEND,
-  plusOne: true
+  plusOne: true,
+  infoCompleted: false,
+  address: { street: '', suite: '', city: '', state: '', zip: '', country: 'US' }
 };
+
+let editingIdentifier = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   loadSavedGuestSession();
@@ -30,6 +42,14 @@ document.addEventListener('DOMContentLoaded', () => {
   initDrawer();
   initEntitlementLookup();
   highlightActiveNav();
+  checkContactInfoModal();
+
+  // Show pending toast if any (e.g. from redirect due to disabled page)
+  const pendingToast = localStorage.getItem('disabled_section_toast');
+  if (pendingToast) {
+    showToast(pendingToast);
+    localStorage.removeItem('disabled_section_toast');
+  }
 
   // Page specific initializations
   if (document.getElementById('timeline-grid')) {
@@ -56,6 +76,33 @@ function checkRouteGuard() {
   if (!currentGuestState.authenticated && !isGatekeeperPage) {
     // Redirect unverified guests to the gatekeeper landing page
     window.location.href = 'index.html';
+    return;
+  }
+
+  // Redirect if section is disabled by admin
+  if (currentGuestState.authenticated && currentGuestState.tier !== GUEST_TIERS.ADMIN) {
+    const settings = getPageSettings();
+    let isPageDisabled = false;
+    let sectionName = '';
+
+    if (currentPath === 'itinerary.html' && !settings.itinerary) {
+      isPageDisabled = true;
+      sectionName = 'Itinerary';
+    } else if (currentPath === 'accommodations.html' && !settings.accommodations) {
+      isPageDisabled = true;
+      sectionName = 'Accommodations';
+    } else if (currentPath === 'registry.html' && !settings.registry) {
+      isPageDisabled = true;
+      sectionName = 'Registry';
+    } else if (currentPath === 'rsvp.html' && !settings.rsvp) {
+      isPageDisabled = true;
+      sectionName = 'RSVP';
+    }
+
+    if (isPageDisabled) {
+      localStorage.setItem('disabled_section_toast', `THE ${sectionName.toUpperCase()} SECTION IS TEMPORARILY DISABLED BY THE COUPLE.`);
+      window.location.href = 'invitation.html';
+    }
   }
 }
 
@@ -70,14 +117,14 @@ function initDrawer() {
   const drawer = document.getElementById('slide-drawer');
 
   function openDrawer() {
-    overlay.classList.add('active');
-    drawer.classList.add('active');
+    if (overlay) overlay.classList.add('active');
+    if (drawer) drawer.classList.add('active');
     document.body.style.overflow = 'hidden';
   }
 
   function closeDrawer() {
-    overlay.classList.remove('active');
-    drawer.classList.remove('active');
+    if (overlay) overlay.classList.remove('active');
+    if (drawer) drawer.classList.remove('active');
     document.body.style.overflow = '';
   }
 
@@ -110,21 +157,45 @@ function initEntitlementLookup() {
   const badgeBtn = document.getElementById('header-access-badge');
   const resetBtn = document.getElementById('drawer-reset-session');
 
+  // Input formatter for phone number on lookup screen
+  if (lookupInput) {
+    lookupInput.addEventListener('input', (e) => {
+      const val = e.target.value;
+      if (val && /^\+?[\d\s()-.]{2,}/.test(val) && !val.includes('@')) {
+        let clean = val.replace(/[^\d]/g, '');
+        if (clean.length > 10) clean = clean.slice(0, 10);
+        if (clean.length > 6) {
+          e.target.value = `(${clean.slice(0, 3)}) ${clean.slice(3, 6)}-${clean.slice(6)}`;
+        } else if (clean.length > 3) {
+          e.target.value = `(${clean.slice(0, 3)}) ${clean.slice(3)}`;
+        } else {
+          e.target.value = clean;
+        }
+      }
+    });
+  }
+
   if (lookupForm) {
     lookupForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      const email = lookupInput.value.trim();
-      if (!email) return;
+      const inputVal = lookupInput.value.trim();
+      if (!inputVal) return;
 
-      const result = lookupGuestEntitlement(email);
+      const result = lookupGuestEntitlement(inputVal);
 
       if (result.found) {
         currentGuestState = {
           authenticated: true,
-          email: result.guest.email,
-          name: result.guest.name,
+          firstName: result.guest.firstName || '',
+          lastName: result.guest.lastName || '',
+          name: result.guest.name || '',
+          email: result.guest.email || '',
+          mobile: result.guest.mobile || '',
+          household: result.guest.household || '',
           tier: result.guest.tier,
-          plusOne: result.guest.plusOne
+          plusOne: result.guest.plusOne,
+          infoCompleted: result.guest.infoCompleted || false,
+          address: result.guest.address || { street: '', suite: '', city: '', state: '', zip: '', country: 'US' }
         };
 
         saveGuestSession();
@@ -134,11 +205,11 @@ function initEntitlementLookup() {
           showToast('ADMIN UNLOCKED — NAVIGATING TO ADMIN CONSOLE...');
           setTimeout(() => { window.location.href = 'admin.html'; }, 1000);
         } else {
-          showToast(`INVITATION VERIFIED — WELCOME ${result.guest.name.toUpperCase()}`);
+          showToast(`INVITATION VERIFIED — WELCOME ${result.guest.firstName.toUpperCase()}`);
           setTimeout(() => { window.location.href = 'invitation.html'; }, 1000);
         }
       } else {
-        showToast('ACCESS DENIED: EMAIL NOT FOUND ON INVITY LIST. CONTACT HANNAH & ETHAN.');
+        showToast('ACCESS DENIED: EMAIL OR PHONE NOT FOUND. CONTACT HANNAH & ETHAN.');
       }
     });
   }
@@ -157,10 +228,16 @@ function initEntitlementLookup() {
     resetBtn.addEventListener('click', () => {
       currentGuestState = {
         authenticated: false,
-        email: '',
+        firstName: '',
+        lastName: '',
         name: '',
+        email: '',
+        mobile: '',
+        household: '',
         tier: GUEST_TIERS.WEEKEND,
-        plusOne: true
+        plusOne: true,
+        infoCompleted: false,
+        address: { street: '', suite: '', city: '', state: '', zip: '', country: 'US' }
       };
       localStorage.removeItem('hannah_ethan_guest');
       localStorage.removeItem('ethan_hannah_guest');
@@ -168,6 +245,33 @@ function initEntitlementLookup() {
       setTimeout(() => { window.location.href = 'index.html'; }, 800);
     });
   }
+}
+
+/* ==========================================================================
+   PAGE VISIBILITY SETTINGS HELPERS
+   ========================================================================== */
+
+export function getPageSettings() {
+  const stored = localStorage.getItem('hannah_ethan_page_settings');
+  if (stored) {
+    try {
+      return JSON.parse(stored);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  const defaults = {
+    itinerary: true,
+    accommodations: true,
+    registry: true,
+    rsvp: true
+  };
+  localStorage.setItem('hannah_ethan_page_settings', JSON.stringify(defaults));
+  return defaults;
+}
+
+export function savePageSettings(settings) {
+  localStorage.setItem('hannah_ethan_page_settings', JSON.stringify(settings));
 }
 
 function loadSavedGuestSession() {
@@ -196,7 +300,7 @@ function updateUIForEntitlement() {
 
   if (badgeText) {
     badgeText.textContent = currentGuestState.authenticated 
-      ? `${currentGuestState.name.split(' ')[0]} — ${currentGuestState.tier.toUpperCase()}`
+      ? `${currentGuestState.firstName || currentGuestState.name.split(' ')[0]} — ${currentGuestState.tier.toUpperCase()}`
       : 'PRIVATE ACCESS GATEKEEPER';
   }
 
@@ -228,6 +332,71 @@ function updateUIForEntitlement() {
     } else {
       link.style.opacity = '0.3';
       link.style.pointerEvents = 'none';
+    }
+  });
+
+  // Dynamically inject "Edit Contact Details" link near the Reset Session button
+  const statusCard = document.querySelector('.drawer-status-card');
+  if (statusCard) {
+    let editBtn = document.getElementById('drawer-edit-contact');
+    
+    if (currentGuestState.authenticated && currentGuestState.tier !== GUEST_TIERS.ADMIN) {
+      if (!editBtn) {
+        editBtn = document.createElement('button');
+        editBtn.id = 'drawer-edit-contact';
+        editBtn.className = 'drawer-status-btn';
+        editBtn.style.marginRight = '1.5rem';
+        editBtn.style.textDecoration = 'underline';
+        editBtn.textContent = 'Edit Contact Details';
+        editBtn.addEventListener('click', () => {
+          // Close drawer
+          const overlay = document.getElementById('drawer-overlay');
+          const drawer = document.getElementById('slide-drawer');
+          if (overlay) overlay.classList.remove('active');
+          if (drawer) drawer.classList.remove('active');
+          document.body.style.overflow = '';
+          
+          // Show contact details modal
+          showContactCollectionModal();
+        });
+        
+        const resetBtn = document.getElementById('drawer-reset-session');
+        if (resetBtn) {
+          resetBtn.parentNode.insertBefore(editBtn, resetBtn);
+        }
+      }
+      editBtn.style.display = 'inline-block';
+    } else {
+      if (editBtn) {
+        editBtn.style.display = 'none';
+      }
+    }
+  }
+
+  // Dynamically hide disabled sections in the drawer
+  const pageSettings = getPageSettings();
+  const drawerLinks = document.querySelectorAll('.drawer-link');
+  drawerLinks.forEach(link => {
+    const href = link.getAttribute('href');
+    let showLink = true;
+
+    if (href === 'itinerary.html' && !pageSettings.itinerary) showLink = false;
+    if (href === 'accommodations.html' && !pageSettings.accommodations) showLink = false;
+    if (href === 'registry.html' && !pageSettings.registry) showLink = false;
+    if (href === 'rsvp.html' && !pageSettings.rsvp) showLink = false;
+
+    // Admin Console link should ONLY show if the user is an admin
+    if (href === 'admin.html' && currentGuestState.tier !== GUEST_TIERS.ADMIN) showLink = false;
+
+    // Admins should always see all links so they can preview/test pages!
+    if (currentGuestState.tier === GUEST_TIERS.ADMIN) {
+      showLink = true;
+    }
+
+    if (showLink) {
+      link.style.display = 'flex';
+    } else {
+      link.style.display = 'none';
     }
   });
 
@@ -310,9 +479,9 @@ function initRSVPPageForm() {
     const nameInput = document.getElementById('rsvp-name');
     const tierSelect = document.getElementById('rsvp-tier');
 
-    if (emailInput) emailInput.value = currentGuestState.email;
-    if (nameInput) nameInput.value = currentGuestState.name;
-    if (tierSelect) tierSelect.value = currentGuestState.tier;
+    if (emailInput) emailInput.value = currentGuestState.email || '';
+    if (nameInput) nameInput.value = currentGuestState.name || '';
+    if (tierSelect) tierSelect.value = currentGuestState.tier || 'weekend';
   }
 
   rsvpForm.addEventListener('submit', (e) => {
@@ -340,18 +509,34 @@ function initAdminConsole() {
 
   const addGuestForm = document.getElementById('add-guest-form');
   const exportCsvBtn = document.getElementById('export-csv-btn');
+  const importCsvBtn = document.getElementById('btn-import-csv');
+  const csvPasteArea = document.getElementById('csv-paste-area');
 
   if (addGuestForm) {
     addGuestForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      const email = document.getElementById('new-guest-email').value;
-      const name = document.getElementById('new-guest-name').value;
+      const firstName = document.getElementById('new-guest-first').value.trim();
+      const lastName = document.getElementById('new-guest-last').value.trim();
+      const email = document.getElementById('new-guest-email').value.trim();
+      const mobile = document.getElementById('new-guest-mobile').value.trim();
+      const household = document.getElementById('new-guest-household').value.trim();
       const tier = document.getElementById('new-guest-tier').value;
-      const note = document.getElementById('new-guest-note').value;
+      const note = document.getElementById('new-guest-note').value.trim();
 
-      const res = addGuest({ email, name, tier, plusOne: true, note });
+      const res = addGuest({ 
+        firstName, 
+        lastName, 
+        name: `${firstName} ${lastName}`, 
+        email, 
+        mobile, 
+        household, 
+        tier, 
+        plusOne: false, 
+        note 
+      });
+
       if (res.success) {
-        showToast(`ADDED GUEST: ${name.toUpperCase()}`);
+        showToast(`ADDED GUEST: ${firstName.toUpperCase()} ${lastName.toUpperCase()}`);
         addGuestForm.reset();
         renderAdminStats();
         renderAdminTable();
@@ -363,6 +548,67 @@ function initAdminConsole() {
 
   if (exportCsvBtn) {
     exportCsvBtn.addEventListener('click', exportGuestListCSV);
+  }
+
+  if (importCsvBtn && csvPasteArea) {
+    importCsvBtn.addEventListener('click', () => {
+      const csvText = csvPasteArea.value;
+
+      if (!csvText.trim()) {
+        showToast('ERROR: CSV DATA BOX IS EMPTY');
+        return;
+      }
+
+      const res = importGuestsFromCSV(csvText);
+      if (res.success) {
+        showToast(res.message.toUpperCase());
+        csvPasteArea.value = '';
+        renderAdminStats();
+        renderAdminTable();
+      } else {
+        showToast(`ERROR: ${res.message.toUpperCase()}`);
+      }
+    });
+  }
+
+  // Hook up visibility control checkboxes
+  const settings = getPageSettings();
+  const toggleItinerary = document.getElementById('toggle-itinerary');
+  const toggleAccommodations = document.getElementById('toggle-accommodations');
+  const toggleRegistry = document.getElementById('toggle-registry');
+  const toggleRsvp = document.getElementById('toggle-rsvp');
+
+  if (toggleItinerary) {
+    toggleItinerary.checked = settings.itinerary;
+    toggleItinerary.addEventListener('change', (e) => {
+      settings.itinerary = e.target.checked;
+      savePageSettings(settings);
+      showToast(`ITINERARY SECTION ${settings.itinerary ? 'ENABLED' : 'DISABLED'}`);
+    });
+  }
+  if (toggleAccommodations) {
+    toggleAccommodations.checked = settings.accommodations;
+    toggleAccommodations.addEventListener('change', (e) => {
+      settings.accommodations = e.target.checked;
+      savePageSettings(settings);
+      showToast(`ACCOMMODATIONS SECTION ${settings.accommodations ? 'ENABLED' : 'DISABLED'}`);
+    });
+  }
+  if (toggleRegistry) {
+    toggleRegistry.checked = settings.registry;
+    toggleRegistry.addEventListener('change', (e) => {
+      settings.registry = e.target.checked;
+      savePageSettings(settings);
+      showToast(`REGISTRY SECTION ${settings.registry ? 'ENABLED' : 'DISABLED'}`);
+    });
+  }
+  if (toggleRsvp) {
+    toggleRsvp.checked = settings.rsvp;
+    toggleRsvp.addEventListener('change', (e) => {
+      settings.rsvp = e.target.checked;
+      savePageSettings(settings);
+      showToast(`RSVP SECTION ${settings.rsvp ? 'ENABLED' : 'DISABLED'}`);
+    });
   }
 }
 
@@ -388,31 +634,154 @@ function renderAdminTable() {
   tbody.innerHTML = '';
 
   list.forEach(guest => {
-    const rsvpMatch = rsvps.find(r => r.email.toLowerCase() === guest.email.toLowerCase());
+    const guestIdentifier = guest.email || guest.mobile || guest.name;
+    const isEditing = (editingIdentifier === guestIdentifier);
+
+    // Try to match RSVP by email first, fallback to name
+    const rsvpMatch = rsvps.find(r => 
+      (guest.email && r.email && r.email.toLowerCase() === guest.email.toLowerCase()) || 
+      (guest.name && r.name && r.name.toLowerCase() === guest.name.toLowerCase())
+    );
+
+    let addrStr = '—';
+    if (guest.address && guest.address.street) {
+      const a = guest.address;
+      addrStr = `${a.street}${a.suite ? ', ' + a.suite : ''}, ${a.city}, ${a.state} ${a.zip} (${a.country})`;
+    }
+
     const tr = document.createElement('tr');
 
-    tr.innerHTML = `
-      <td><strong>${guest.name}</strong></td>
-      <td>${guest.email}</td>
-      <td><span class="badge-tier ${guest.tier}">${guest.tier.toUpperCase()}</span></td>
-      <td>${rsvpMatch ? (rsvpMatch.attendance === 'accept' ? 'ACCEPTED' : 'DECLINED') : 'PENDING'}</td>
-      <td>${guest.note || '—'}</td>
-      <td>
-        <button class="btn-table-action delete" data-email="${guest.email}">Delete</button>
-      </td>
-    `;
+    if (isEditing) {
+      // Build comma-separated address value for easy inline editing
+      let addrInputVal = '';
+      if (guest.address && guest.address.street) {
+        const a = guest.address;
+        addrInputVal = [a.street || '', a.suite || '', a.city || '', a.state || '', a.zip || '', a.country || 'US'].filter(Boolean).join(', ');
+      }
+
+      tr.innerHTML = `
+        <td><input type="text" class="lookup-input grid-edit-household" value="${guest.household || ''}" style="width: 100px; text-align: left; padding: 4px; font-size: 0.8rem;"></td>
+        <td>
+          <input type="text" class="lookup-input grid-edit-first" value="${guest.firstName || ''}" placeholder="First" style="width: 70px; text-align: left; padding: 4px; font-size: 0.8rem; display: inline-block; margin-bottom: 2px;">
+          <input type="text" class="lookup-input grid-edit-last" value="${guest.lastName || ''}" placeholder="Last" style="width: 70px; text-align: left; padding: 4px; font-size: 0.8rem; display: inline-block;">
+        </td>
+        <td><input type="email" class="lookup-input grid-edit-email" value="${guest.email || ''}" style="width: 130px; text-align: left; padding: 4px; font-size: 0.8rem;"></td>
+        <td><input type="text" class="lookup-input grid-edit-mobile" value="${guest.mobile || ''}" style="width: 100px; text-align: left; padding: 4px; font-size: 0.8rem;"></td>
+        <td><input type="text" class="lookup-input grid-edit-address" value="${addrInputVal}" placeholder="Street, Suite, City, State, Zip, Country" style="width: 180px; text-align: left; padding: 4px; font-size: 0.75rem;"></td>
+        <td>
+          <select class="lookup-input grid-edit-tier" style="width: 100px; height: 32px; padding: 4px; font-size: 0.8rem;">
+            <option value="weekend" ${guest.tier === 'weekend' ? 'selected' : ''}>WEEKEND</option>
+            <option value="wedding_only" ${guest.tier === 'wedding_only' ? 'selected' : ''}>WEDDING_ONLY</option>
+            <option value="admin" ${guest.tier === 'admin' ? 'selected' : ''}>ADMIN</option>
+          </select>
+        </td>
+        <td>${rsvpMatch ? (rsvpMatch.attendance === 'accept' ? 'ACCEPTED' : 'DECLINED') : 'PENDING'}</td>
+        <td>${guest.infoCompleted ? '✓' : '—'}</td>
+        <td>
+          <button class="btn-table-action save" data-identifier="${guestIdentifier}" style="margin-bottom: 2px;">Save</button>
+          <button class="btn-table-action cancel" style="color: var(--text-secondary);">Cancel</button>
+        </td>
+      `;
+    } else {
+      tr.innerHTML = `
+        <td><strong>${guest.household || '—'}</strong></td>
+        <td><strong>${guest.name}</strong></td>
+        <td>${guest.email || '—'}</td>
+        <td>${guest.mobile || '—'}</td>
+        <td style="font-size: 0.75rem; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${addrStr}">${addrStr}</td>
+        <td><span class="badge-tier ${guest.tier || 'weekend'}">${(guest.tier || '').toUpperCase()}</span></td>
+        <td>${rsvpMatch ? (rsvpMatch.attendance === 'accept' ? 'ACCEPTED' : 'DECLINED') : 'PENDING'}</td>
+        <td>${guest.infoCompleted ? '✓' : '—'}</td>
+        <td>
+          <button class="btn-table-action edit" data-identifier="${guestIdentifier}">Edit</button>
+          <button class="btn-table-action delete" data-identifier="${guestIdentifier}">Delete</button>
+        </td>
+      `;
+    }
 
     tbody.appendChild(tr);
   });
 
-  document.querySelectorAll('.btn-table-action.delete').forEach(btn => {
+  // Attach Edit action listeners
+  document.querySelectorAll('.btn-table-action.edit').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      const email = e.target.getAttribute('data-email');
-      if (confirm(`Remove ${email} from guest database?`)) {
-        deleteGuest(email);
+      editingIdentifier = e.target.getAttribute('data-identifier');
+      renderAdminTable();
+    });
+  });
+
+  // Attach Cancel action listeners
+  document.querySelectorAll('.btn-table-action.cancel').forEach(btn => {
+    btn.addEventListener('click', () => {
+      editingIdentifier = null;
+      renderAdminTable();
+    });
+  });
+
+  // Attach Save action listeners
+  document.querySelectorAll('.btn-table-action.save').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const identifier = e.target.getAttribute('data-identifier');
+      const row = e.target.closest('tr');
+
+      const household = row.querySelector('.grid-edit-household').value.trim();
+      const firstName = row.querySelector('.grid-edit-first').value.trim();
+      const lastName = row.querySelector('.grid-edit-last').value.trim();
+      const email = row.querySelector('.grid-edit-email').value.trim();
+      const mobile = row.querySelector('.grid-edit-mobile').value.trim();
+      const tier = row.querySelector('.grid-edit-tier').value;
+      const addrStr = row.querySelector('.grid-edit-address').value.trim();
+
+      if (!firstName || !lastName || !household) {
+        showToast('ERROR: HOUSEHOLD, FIRST AND LAST NAMES ARE REQUIRED');
+        return;
+      }
+
+      // Parse address: Street, Suite, City, State, Zip, Country
+      let address = { street: '', suite: '', city: '', state: '', zip: '', country: 'US' };
+      if (addrStr) {
+        const parts = addrStr.split(',').map(p => p.trim());
+        address = {
+          street: parts[0] || '',
+          suite: parts[1] || '',
+          city: parts[2] || '',
+          state: parts[3] || '',
+          zip: parts[4] || '',
+          country: parts[5] || 'US'
+        };
+      }
+
+      const updatedData = {
+        household,
+        firstName,
+        lastName,
+        email,
+        mobile,
+        tier,
+        address
+      };
+
+      const res = updateGuestDirectly(identifier, updatedData);
+      if (res.success) {
+        showToast('GUEST INFORMATION UPDATED');
+        editingIdentifier = null;
         renderAdminStats();
         renderAdminTable();
-        showToast(`DELETED GUEST: ${email}`);
+      } else {
+        showToast(`ERROR: ${res.message.toUpperCase()}`);
+      }
+    });
+  });
+
+  // Attach Delete action listeners
+  document.querySelectorAll('.btn-table-action.delete').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const identifier = e.target.getAttribute('data-identifier');
+      if (confirm(`Remove ${identifier} from guest database?`)) {
+        deleteGuest(identifier);
+        renderAdminStats();
+        renderAdminTable();
+        showToast(`DELETED GUEST: ${identifier}`);
       }
     });
   });
@@ -422,15 +791,24 @@ function exportGuestListCSV() {
   const list = getGuestList();
   const rsvps = getRsvpList();
 
-  let csv = 'Name,Email,Tier,Note,RSVP_Status,Meal_Selection,Dietary_Notes\n';
+  let csv = 'Household,First_Name,Last_Name,Email,Mobile,Street,Suite,City,State,Zip,Country,Tier,Note,RSVP_Status,Meal_Selection,Dietary_Notes\n';
 
   list.forEach(g => {
-    const r = rsvps.find(item => item.email.toLowerCase() === g.email.toLowerCase());
+    const r = rsvps.find(item => 
+      (g.email && item.email.toLowerCase() === g.email.toLowerCase()) || 
+      (item.name.toLowerCase() === g.name.toLowerCase())
+    );
     const rsvpStatus = r ? r.attendance : 'PENDING';
     const meal = r ? r.meal : 'N/A';
     const dietary = r ? `"${(r.dietary || '').replace(/"/g, '""')}"` : 'N/A';
+    const street = g.address ? `"${(g.address.street || '').replace(/"/g, '""')}"` : '""';
+    const suite = g.address ? `"${(g.address.suite || '').replace(/"/g, '""')}"` : '""';
+    const city = g.address ? `"${(g.address.city || '').replace(/"/g, '""')}"` : '""';
+    const state = g.address ? `"${(g.address.state || '').replace(/"/g, '""')}"` : '""';
+    const zip = g.address ? `"${(g.address.zip || '').replace(/"/g, '""')}"` : '""';
+    const country = g.address ? `"${(g.address.country || '').replace(/"/g, '""')}"` : '""';
 
-    csv += `"${g.name}","${g.email}","${g.tier}","${g.note || ''}","${rsvpStatus}","${meal}",${dietary}\n`;
+    csv += `"${g.household || ''}","${g.firstName || ''}","${g.lastName || ''}","${g.email || ''}","${g.mobile || ''}",${street},${suite},${city},${state},${zip},${country},"${g.tier}","${g.note || ''}","${rsvpStatus}","${meal}",${dietary}\n`;
   });
 
   const blob = new Blob([csv], { type: 'text/csv' });
@@ -461,4 +839,304 @@ function showToast(message) {
   setTimeout(() => {
     toast.classList.remove('show');
   }, 4500);
+}
+
+/* ==========================================================================
+   8. BLOCKING HOUSEHOLD CONTACT DETAILS MODAL
+   ========================================================================== */
+
+function checkContactInfoModal() {
+  const currentPath = window.location.pathname.split('/').pop() || 'index.html';
+  const isGatekeeperPage = (currentPath === 'index.html' || currentPath === '');
+  const isAdminPage = (currentPath === 'admin.html');
+
+  if (currentGuestState.authenticated && !currentGuestState.infoCompleted && currentGuestState.tier !== GUEST_TIERS.ADMIN && !isGatekeeperPage && !isAdminPage) {
+    showContactCollectionModal();
+  }
+}
+
+function showContactCollectionModal() {
+  // Prevent double rendering
+  if (document.getElementById('contact-collection-modal')) return;
+
+  const list = getGuestList();
+  const householdId = currentGuestState.household;
+  const members = list.filter(g => g.household && g.household === householdId);
+  
+  if (members.length === 0) return; // safety check
+
+  const defaultAddress = members[0].address || { street: '', suite: '', city: '', state: '', zip: '', country: 'US' };
+
+  // Create overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'contact-modal-overlay active';
+  overlay.id = 'contact-collection-modal';
+
+  // Create modal window
+  const windowEl = document.createElement('div');
+  windowEl.className = 'contact-modal-window';
+
+  // Modal header
+  let headerHtml = `
+    <div class="contact-modal-header">
+      <div class="contact-modal-title">Confirm Contact Details</div>
+      <p class="contact-modal-subtitle">
+        Please verify your mailing address and the contact info for each member of your household to help us coordinate invitations and wedding updates.
+      </p>
+    </div>
+  `;
+
+  // Build tabs header and panels
+  let tabsHeaderHtml = '<div class="household-tabs-nav">';
+  let panelsHtml = '<div class="household-tabs-content">';
+
+  members.forEach((member, index) => {
+    const isActive = index === 0 ? 'active' : '';
+    const displayName = member.firstName || member.name.split(' ')[0] || `Guest ${index + 1}`;
+    
+    tabsHeaderHtml += `
+      <button type="button" class="household-tab-btn ${isActive}" data-member-idx="${index}">
+        ${displayName}
+      </button>
+    `;
+
+    // Parse phone and country code from database
+    let phoneVal = member.mobile || '';
+    let selectedCountry = '1';
+    
+    if (phoneVal.startsWith('+')) {
+      const parts = phoneVal.split(' ');
+      if (parts.length > 1) {
+        selectedCountry = parts[0].replace('+', '');
+        phoneVal = parts.slice(1).join(' ');
+      }
+    }
+
+    panelsHtml += `
+      <div class="household-tab-panel ${isActive}" id="member-panel-${index}">
+        <div class="form-grid-member">
+          <div class="form-group">
+            <label>First Name</label>
+            <input type="text" class="lookup-input member-first-name" data-idx="${index}" value="${member.firstName || ''}" required style="text-align: left;">
+          </div>
+          <div class="form-group">
+            <label>Last Name</label>
+            <input type="text" class="lookup-input member-last-name" data-idx="${index}" value="${member.lastName || ''}" required style="text-align: left;">
+          </div>
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" class="lookup-input member-email" data-idx="${index}" value="${member.email || ''}" placeholder="email@domain.com" style="text-align: left;">
+          </div>
+          <div class="form-group">
+            <label>Mobile Phone</label>
+            <div class="phone-input-combo">
+              <select class="phone-country-select member-phone-country" data-idx="${index}">
+                <option value="1" ${selectedCountry === '1' ? 'selected' : ''}>US (+1)</option>
+                <option value="44" ${selectedCountry === '44' ? 'selected' : ''}>UK (+44)</option>
+                <option value="972" ${selectedCountry === '972' ? 'selected' : ''}>IL (+972)</option>
+                <option value="33" ${selectedCountry === '33' ? 'selected' : ''}>FR (+33)</option>
+                <option value="39" ${selectedCountry === '39' ? 'selected' : ''}>IT (+39)</option>
+                <option value="1-CA" ${selectedCountry === '1-CA' ? 'selected' : ''}>CA (+1)</option>
+                <option value="other" ${selectedCountry === 'other' ? 'selected' : ''}>Other</option>
+              </select>
+              <input type="text" class="lookup-input member-mobile-input" data-idx="${index}" value="${phoneVal}" placeholder="(555) 555-5555" style="text-align: left;">
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  tabsHeaderHtml += '</div>';
+  panelsHtml += '</div>';
+
+  // Assemble full body HTML
+  let bodyHtml = `
+    <form id="contact-collection-form">
+      <div class="contact-modal-body">
+        <h4 class="contact-modal-section-title">Mailing Address</h4>
+        
+        <div class="form-grid-address">
+          <div class="form-group full-width">
+            <label>Street Address</label>
+            <input type="text" id="modal-addr-street" class="lookup-input" value="${defaultAddress.street || ''}" placeholder="123 Orchard Road" required style="text-align: left;">
+          </div>
+          <div class="form-group">
+            <label>Apt / Suite</label>
+            <input type="text" id="modal-addr-suite" class="lookup-input" value="${defaultAddress.suite || ''}" placeholder="Apt 4B" style="text-align: left;">
+          </div>
+          <div class="form-group">
+            <label>City</label>
+            <input type="text" id="modal-addr-city" class="lookup-input" value="${defaultAddress.city || ''}" placeholder="Miami" required style="text-align: left;">
+          </div>
+        </div>
+
+        <div class="form-grid-address-3col">
+          <div class="form-group">
+            <label>State / Province</label>
+            <input type="text" id="modal-addr-state" class="lookup-input" value="${defaultAddress.state || ''}" placeholder="FL" required style="text-align: left;">
+          </div>
+          <div class="form-group">
+            <label>Zip / Postal Code</label>
+            <input type="text" id="modal-addr-zip" class="lookup-input" value="${defaultAddress.zip || ''}" placeholder="33134" required style="text-align: left;">
+          </div>
+          <div class="form-group">
+            <label>Country</label>
+            <select id="modal-addr-country" class="phone-country-select" style="width: 100%; height: 42px;">
+              <option value="US" ${defaultAddress.country === 'US' ? 'selected' : ''}>United States</option>
+              <option value="CA" ${defaultAddress.country === 'CA' ? 'selected' : ''}>Canada</option>
+              <option value="GB" ${defaultAddress.country === 'GB' ? 'selected' : ''}>United Kingdom</option>
+              <option value="IL" ${defaultAddress.country === 'IL' ? 'selected' : ''}>Israel</option>
+              <option value="FR" ${defaultAddress.country === 'FR' ? 'selected' : ''}>France</option>
+              <option value="IT" ${defaultAddress.country === 'IT' ? 'selected' : ''}>Italy</option>
+              <option value="Other" ${defaultAddress.country === 'Other' ? 'selected' : ''}>Other</option>
+            </select>
+          </div>
+        </div>
+
+        <h4 class="contact-modal-section-title">Household Members</h4>
+        ${tabsHeaderHtml}
+        ${panelsHtml}
+      </div>
+
+      <div class="contact-modal-footer">
+        <button type="submit" class="contact-modal-submit-btn">Save & Continue</button>
+      </div>
+    </form>
+  `;
+
+  windowEl.innerHTML = headerHtml + bodyHtml;
+  overlay.appendChild(windowEl);
+  document.body.appendChild(overlay);
+
+  // Disable background scrolling
+  document.body.style.overflow = 'hidden';
+
+  // Attach tab row switchers
+  const tabBtns = windowEl.querySelectorAll('.household-tab-btn');
+  const panels = windowEl.querySelectorAll('.household-tab-panel');
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = btn.getAttribute('data-member-idx');
+      tabBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      panels.forEach(p => p.classList.remove('active'));
+      windowEl.querySelector(`#member-panel-${idx}`).classList.add('active');
+    });
+  });
+
+  // Attach formatting handlers to inputs
+  const mobileInputs = windowEl.querySelectorAll('.member-mobile-input');
+  mobileInputs.forEach(input => {
+    const idx = input.getAttribute('data-idx');
+    const countrySelect = windowEl.querySelector(`.member-phone-country[data-idx="${idx}"]`);
+
+    function applyFormat() {
+      if (countrySelect.value === '1' || countrySelect.value === '1-CA') {
+        let val = input.value.replace(/[^\d]/g, '');
+        if (val.length > 10) val = val.slice(0, 10);
+        if (val.length > 6) {
+          input.value = `(${val.slice(0, 3)}) ${val.slice(3, 6)}-${val.slice(6)}`;
+        } else if (val.length > 3) {
+          input.value = `(${val.slice(0, 3)}) ${val.slice(3)}`;
+        } else {
+          input.value = val;
+        }
+      }
+    }
+
+    input.addEventListener('input', applyFormat);
+    countrySelect.addEventListener('change', applyFormat);
+    applyFormat();
+  });
+
+  // Handle Form Submission
+  const form = windowEl.querySelector('#contact-collection-form');
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const address = {
+      street: document.getElementById('modal-addr-street').value.trim(),
+      suite: document.getElementById('modal-addr-suite').value.trim(),
+      city: document.getElementById('modal-addr-city').value.trim(),
+      state: document.getElementById('modal-addr-state').value.trim(),
+      zip: document.getElementById('modal-addr-zip').value.trim(),
+      country: document.getElementById('modal-addr-country').value
+    };
+
+    const updatedMembers = [];
+    let validationPassed = true;
+
+    members.forEach((member, index) => {
+      const fNameInput = windowEl.querySelector(`.member-first-name[data-idx="${index}"]`);
+      const lNameInput = windowEl.querySelector(`.member-last-name[data-idx="${index}"]`);
+      const emailInput = windowEl.querySelector(`.member-email[data-idx="${index}"]`);
+      const mobileInput = windowEl.querySelector(`.member-mobile-input[data-idx="${index}"]`);
+      const countrySelect = windowEl.querySelector(`.member-phone-country[data-idx="${index}"]`);
+
+      const fName = fNameInput.value.trim();
+      const lName = lNameInput.value.trim();
+      const email = emailInput.value.trim();
+      const mobileRaw = mobileInput.value.trim();
+      const countryCode = countrySelect.value;
+
+      if (!fName || !lName) {
+        validationPassed = false;
+        fNameInput.style.borderColor = 'red';
+        lNameInput.style.borderColor = 'red';
+      } else {
+        fNameInput.style.borderColor = '';
+        lNameInput.style.borderColor = '';
+      }
+
+      let mobile = mobileRaw;
+      if (mobileRaw && countryCode !== 'other') {
+        const cleanCode = countryCode.split('-')[0];
+        mobile = `+${cleanCode} ${mobileRaw}`;
+      }
+
+      updatedMembers.push({
+        firstName: fName,
+        lastName: lName,
+        email: email,
+        mobile: mobile
+      });
+    });
+
+    if (!validationPassed) {
+      showToast('ERROR: PLEASE COMPLETE ALL NAMES');
+      return;
+    }
+
+    const updated = updateHouseholdInfo(householdId, address, updatedMembers);
+
+    // Update current guest state
+    currentGuestState.infoCompleted = true;
+    currentGuestState.address = address;
+
+    // Refresh currently logged-in guest session values from updated records
+    const activeMatch = updated.find(m => {
+      if (currentGuestState.email && m.email.toLowerCase() === currentGuestState.email.toLowerCase()) return true;
+      if (currentGuestState.mobile && normalizePhone(m.mobile) === normalizePhone(currentGuestState.mobile)) return true;
+      return false;
+    }) || updated[0];
+
+    currentGuestState.firstName = activeMatch.firstName;
+    currentGuestState.lastName = activeMatch.lastName;
+    currentGuestState.name = activeMatch.name;
+    currentGuestState.email = activeMatch.email;
+    currentGuestState.mobile = activeMatch.mobile;
+
+    saveGuestSession();
+
+    overlay.remove();
+    document.body.style.overflow = '';
+
+    showToast('THANK YOU — CONTACT INFORMATION VERIFIED');
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+  });
 }
