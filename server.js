@@ -54,7 +54,9 @@ async function initDb() {
       state TEXT,
       zip TEXT,
       country TEXT,
-      infoCompleted INTEGER DEFAULT 0
+      infoCompleted INTEGER DEFAULT 0,
+      addedBy TEXT DEFAULT 'system',
+      addedAt TEXT
     )
   `);
 
@@ -70,6 +72,14 @@ async function initDb() {
       timestamp TEXT
     )
   `);
+
+  // Safe migrations for existing databases
+  try {
+    await db.exec("ALTER TABLE guests ADD COLUMN addedBy TEXT DEFAULT 'system'");
+  } catch (e) { /* already exists */ }
+  try {
+    await db.exec("ALTER TABLE guests ADD COLUMN addedAt TEXT");
+  } catch (e) { /* already exists */ }
 
   // Seed default admin logins if empty
   const count = await db.get('SELECT COUNT(*) as count FROM guests');
@@ -125,10 +135,10 @@ async function initDb() {
       await db.run(
         `INSERT INTO guests (
           firstName, lastName, name, email, mobile, household, tier, plusOne, note,
-          street, suite, city, state, zip, country, infoCompleted
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '', '', '', '', '', 'US', 0)`,
+          street, suite, city, state, zip, country, infoCompleted, addedBy, addedAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '', '', '', '', '', 'US', 0, 'system', ?)`,
         admin.firstName, admin.lastName, admin.name, admin.email, admin.mobile,
-        admin.household, admin.tier, admin.plusOne, admin.note
+        admin.household, admin.tier, admin.plusOne, admin.note, new Date().toISOString()
       );
     }
     console.log('Seeded database with default admin accounts.');
@@ -158,7 +168,9 @@ app.get('/api/guests', async (req, res) => {
         zip: r.zip || '',
         country: r.country || 'US'
       },
-      infoCompleted: !!r.infoCompleted
+      infoCompleted: !!r.infoCompleted,
+      addedBy: r.addedBy || 'system',
+      addedAt: r.addedAt || ''
     }));
     res.json(mapped);
   } catch (error) {
@@ -179,15 +191,19 @@ app.post('/api/guests/add', async (req, res) => {
     }
 
     const addr = g.address || {};
+    const addedBy = g.addedBy || 'system';
+    const addedAt = g.addedAt || new Date().toISOString();
+
     await db.run(
       `INSERT INTO guests (
         firstName, lastName, name, email, mobile, household, tier, plusOne, note,
-        street, suite, city, state, zip, country, infoCompleted
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        street, suite, city, state, zip, country, infoCompleted, addedBy, addedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       g.firstName, g.lastName, g.name, g.email || '', g.mobile || '', g.household, g.tier,
       g.plusOne ? 1 : 0, g.note || '',
       addr.street || '', addr.suite || '', addr.city || '', addr.state || '', addr.zip || '', addr.country || 'US',
-      g.infoCompleted ? 1 : 0
+      g.infoCompleted ? 1 : 0,
+      addedBy, addedAt
     );
     res.json({ success: true, guest: g });
   } catch (error) {
@@ -325,7 +341,9 @@ app.post('/api/household/update', async (req, res) => {
         zip: r.zip || '',
         country: r.country || 'US'
       },
-      infoCompleted: !!r.infoCompleted
+      infoCompleted: !!r.infoCompleted,
+      addedBy: r.addedBy || 'system',
+      addedAt: r.addedAt || ''
     }));
     
     res.json({ success: true, guests: mapped });
@@ -370,15 +388,19 @@ app.post('/api/admin/import', async (req, res) => {
       }
 
       const addr = g.address || {};
+      const addedBy = g.addedBy || 'import';
+      const addedAt = g.addedAt || new Date().toISOString();
+
       await db.run(
         `INSERT INTO guests (
           firstName, lastName, name, email, mobile, household, tier, plusOne, note,
-          street, suite, city, state, zip, country, infoCompleted
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          street, suite, city, state, zip, country, infoCompleted, addedBy, addedAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         g.firstName, g.lastName, g.name, g.email || '', g.mobile || '', g.household, g.tier,
         g.plusOne ? 1 : 0, g.note || '',
         addr.street || '', addr.suite || '', addr.city || '', addr.state || '', addr.zip || '', addr.country || 'US',
-        g.infoCompleted ? 1 : 0
+        g.infoCompleted ? 1 : 0,
+        addedBy, addedAt
       );
       imported++;
     }

@@ -172,7 +172,7 @@ export async function updateGuestDirectly(originalIdentifier, updatedGuestData) 
 }
 
 /* CSV Import Engine */
-export async function importGuestsFromCSV(csvText) {
+export async function importGuestsFromCSV(csvText, addedBy) {
   const lines = csvText.split('\n');
   if (lines.length === 0 || (lines.length === 1 && !lines[0].trim())) {
     return { success: false, message: 'No data found' };
@@ -333,7 +333,9 @@ export async function importGuestsFromCSV(csvText) {
       plusOne: false,
       note: 'Imported',
       address: { street: '', suite: '', city: '', state: '', zip: '', country: 'US' },
-      infoCompleted: false
+      infoCompleted: false,
+      addedBy: addedBy || 'import',
+      addedAt: new Date().toISOString()
     });
     importCount++;
   }

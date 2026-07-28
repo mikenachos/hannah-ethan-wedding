@@ -525,6 +525,21 @@ function initAdminConsole() {
   renderAdminStats();
   renderAdminTable();
 
+  // Attach filter event listeners to trigger redraw on typing/selection
+  const filterElements = [
+    'filter-household', 'filter-name', 'filter-email', 'filter-mobile',
+    'filter-address', 'filter-tier', 'filter-rsvp', 'filter-completed',
+    'filter-addedby', 'filter-addedat'
+  ];
+  filterElements.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', () => {
+        renderAdminTable();
+      });
+    }
+  });
+
   const addGuestForm = document.getElementById('add-guest-form');
   const exportCsvBtn = document.getElementById('export-csv-btn');
   const importCsvBtn = document.getElementById('btn-import-csv');
@@ -550,7 +565,9 @@ function initAdminConsole() {
         household, 
         tier, 
         plusOne: false, 
-        note 
+        note,
+        addedBy: currentGuestState.email || 'admin',
+        addedAt: new Date().toISOString()
       });
 
       if (res.success) {
@@ -577,7 +594,7 @@ function initAdminConsole() {
         return;
       }
 
-      const res = await importGuestsFromCSV(csvText);
+      const res = await importGuestsFromCSV(csvText, currentGuestState.email || 'import');
       if (res.success) {
         showToast(res.message.toUpperCase());
         csvPasteArea.value = '';
@@ -651,7 +668,53 @@ async function renderAdminTable() {
   const rsvps = await getRsvpList();
   tbody.innerHTML = '';
 
-  list.forEach(guest => {
+  // Get active filter values
+  const filterHousehold = (document.getElementById('filter-household')?.value || '').toLowerCase();
+  const filterName = (document.getElementById('filter-name')?.value || '').toLowerCase();
+  const filterEmail = (document.getElementById('filter-email')?.value || '').toLowerCase();
+  const filterMobile = (document.getElementById('filter-mobile')?.value || '').toLowerCase();
+  const filterAddress = (document.getElementById('filter-address')?.value || '').toLowerCase();
+  const filterTier = document.getElementById('filter-tier')?.value || '';
+  const filterRsvp = document.getElementById('filter-rsvp')?.value || '';
+  const filterCompleted = document.getElementById('filter-completed')?.value || '';
+  const filterAddedBy = (document.getElementById('filter-addedby')?.value || '').toLowerCase();
+  const filterAddedAt = (document.getElementById('filter-addedat')?.value || '').toLowerCase();
+
+  const filteredList = list.filter(guest => {
+    if (filterHousehold && !guest.household?.toLowerCase().includes(filterHousehold)) return false;
+    if (filterName && !guest.name?.toLowerCase().includes(filterName)) return false;
+    if (filterEmail && !guest.email?.toLowerCase().includes(filterEmail)) return false;
+    if (filterMobile && !normalizePhone(guest.mobile).includes(normalizePhone(filterMobile))) return false;
+    
+    if (filterAddress) {
+      const a = guest.address || {};
+      const fullAddr = `${a.street} ${a.suite} ${a.city} ${a.state} ${a.zip} ${a.country}`.toLowerCase();
+      if (!fullAddr.includes(filterAddress)) return false;
+    }
+    
+    if (filterTier && guest.tier !== filterTier) return false;
+    
+    const rsvpMatch = rsvps.find(r => 
+      (guest.email && r.email && r.email.toLowerCase() === guest.email.toLowerCase()) || 
+      (guest.name && r.name && r.name.toLowerCase() === guest.name.toLowerCase())
+    );
+    const rsvpStatus = rsvpMatch ? rsvpMatch.attendance : 'pending';
+    if (filterRsvp && rsvpStatus !== filterRsvp) return false;
+    
+    const completed = guest.infoCompleted ? 'yes' : 'no';
+    if (filterCompleted && completed !== filterCompleted) return false;
+
+    if (filterAddedBy && !guest.addedBy?.toLowerCase().includes(filterAddedBy)) return false;
+
+    if (filterAddedAt) {
+      const dateStr = guest.addedAt ? new Date(guest.addedAt).toLocaleDateString().toLowerCase() : '';
+      if (!dateStr.includes(filterAddedAt)) return false;
+    }
+    
+    return true;
+  });
+
+  filteredList.forEach(guest => {
     const guestIdentifier = guest.email || guest.mobile || guest.name;
     const isEditing = (editingIdentifier === guestIdentifier);
 
@@ -695,6 +758,8 @@ async function renderAdminTable() {
         </td>
         <td>${rsvpMatch ? (rsvpMatch.attendance === 'accept' ? 'ACCEPTED' : 'DECLINED') : 'PENDING'}</td>
         <td>${guest.infoCompleted ? '✓' : '—'}</td>
+        <td style="font-size: 0.75rem;">${guest.addedBy || 'system'}</td>
+        <td style="font-size: 0.75rem;">${guest.addedAt ? new Date(guest.addedAt).toLocaleDateString() : '—'}</td>
         <td>
           <button class="btn-table-action save" data-identifier="${guestIdentifier}" style="margin-bottom: 2px;">Save</button>
           <button class="btn-table-action cancel" style="color: var(--text-secondary);">Cancel</button>
@@ -710,6 +775,8 @@ async function renderAdminTable() {
         <td><span class="badge-tier ${guest.tier || 'weekend'}">${(guest.tier || '').toUpperCase()}</span></td>
         <td>${rsvpMatch ? (rsvpMatch.attendance === 'accept' ? 'ACCEPTED' : 'DECLINED') : 'PENDING'}</td>
         <td>${guest.infoCompleted ? '✓' : '—'}</td>
+        <td style="font-size: 0.75rem;">${guest.addedBy || 'system'}</td>
+        <td style="font-size: 0.75rem;">${guest.addedAt ? new Date(guest.addedAt).toLocaleDateString() : '—'}</td>
         <td>
           <button class="btn-table-action edit" data-identifier="${guestIdentifier}">Edit</button>
           <button class="btn-table-action delete" data-identifier="${guestIdentifier}">Delete</button>
@@ -809,7 +876,7 @@ async function exportGuestListCSV() {
   const list = await getGuestList();
   const rsvps = await getRsvpList();
 
-  let csv = 'Household,First_Name,Last_Name,Email,Mobile,Street,Suite,City,State,Zip,Country,Tier,Note,RSVP_Status,Meal_Selection,Dietary_Notes\n';
+  let csv = 'Household,First_Name,Last_Name,Email,Mobile,Street,Suite,City,State,Zip,Country,Tier,Note,RSVP_Status,Meal_Selection,Dietary_Notes,Added_By,Added_At\n';
 
   list.forEach(g => {
     const r = rsvps.find(item => 
@@ -826,7 +893,7 @@ async function exportGuestListCSV() {
     const zip = g.address ? `"${(g.address.zip || '').replace(/"/g, '""')}"` : '""';
     const country = g.address ? `"${(g.address.country || '').replace(/"/g, '""')}"` : '""';
 
-    csv += `"${g.household || ''}","${g.firstName || ''}","${g.lastName || ''}","${g.email || ''}","${g.mobile || ''}",${street},${suite},${city},${state},${zip},${country},"${g.tier}","${g.note || ''}","${rsvpStatus}","${meal}",${dietary}\n`;
+    csv += `"${g.household || ''}","${g.firstName || ''}","${g.lastName || ''}","${g.email || ''}","${g.mobile || ''}",${street},${suite},${city},${state},${zip},${country},"${g.tier}","${g.note || ''}","${rsvpStatus}","${meal}",${dietary},"${g.addedBy || 'system'}","${g.addedAt || ''}"\n`;
   });
 
   const blob = new Blob([csv], { type: 'text/csv' });

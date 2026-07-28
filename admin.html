@@ -59,7 +59,7 @@
 
   <!-- ADMIN CONTENT -->
   <section class="section-padding">
-    <div class="container">
+    <div class="container-wide">
       
       <!-- STATS OVERVIEW -->
       <div class="admin-stats-grid">
@@ -192,7 +192,42 @@
               <th>Tier</th>
               <th>RSVP Status</th>
               <th>Info?</th>
+              <th>Added By</th>
+              <th>Added At</th>
               <th>Actions</th>
+            </tr>
+            <tr class="table-filters-row">
+              <td><input type="text" id="filter-household" class="table-filter-input" placeholder="Filter Household..."></td>
+              <td><input type="text" id="filter-name" class="table-filter-input" placeholder="Filter Name..."></td>
+              <td><input type="text" id="filter-email" class="table-filter-input" placeholder="Filter Email..."></td>
+              <td><input type="text" id="filter-mobile" class="table-filter-input" placeholder="Filter Phone..."></td>
+              <td><input type="text" id="filter-address" class="table-filter-input" placeholder="Filter Address..."></td>
+              <td>
+                <select id="filter-tier" class="table-filter-input">
+                  <option value="">All Tiers</option>
+                  <option value="weekend">Weekend</option>
+                  <option value="wedding_only">Wedding</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </td>
+              <td>
+                <select id="filter-rsvp" class="table-filter-input">
+                  <option value="">All RSVPs</option>
+                  <option value="accept">Accept</option>
+                  <option value="decline">Decline</option>
+                  <option value="pending">Pending</option>
+                </select>
+              </td>
+              <td>
+                <select id="filter-completed" class="table-filter-input">
+                  <option value="">All Statuses</option>
+                  <option value="yes">Completed</option>
+                  <option value="no">Pending</option>
+                </select>
+              </td>
+              <td><input type="text" id="filter-addedby" class="table-filter-input" placeholder="Filter Creator..."></td>
+              <td><input type="text" id="filter-addedat" class="table-filter-input" placeholder="Filter Date..."></td>
+              <td></td>
             </tr>
           </thead>
           <tbody id="admin-guest-table-body">

@@ -1190,3 +1190,30 @@ h1, h2, h3, h4, .font-serif {
   .form-grid-member { grid-template-columns: 1fr; }
 }
 
+.container-wide {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  width: 100%;
+}
+
+.table-filter-input {
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.75rem;
+  border: 1px solid var(--border-light);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  outline: none;
+  font-family: inherit;
+}
+
+.table-filter-input:focus {
+  border-color: var(--text-primary);
+}
+
+.table-filters-row td {
+  padding: 0.5rem !important;
+  background-color: var(--bg-secondary) !important;
+}
+
