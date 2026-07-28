@@ -135,6 +135,8 @@ export function getGuestList() {
         localStorage.removeItem('hannah_ethan_guest_db');
         localStorage.removeItem('hannah_ethan_guest');
         localStorage.removeItem('hannah_ethan_rsvp_db');
+        localStorage.setItem('hannah_ethan_guest_db', JSON.stringify(INITIAL_INVITEES_DATABASE));
+        return INITIAL_INVITEES_DATABASE;
       } else {
         // Dynamic Sync: merge any entries in code's initial list that are missing in LocalStorage
         let modified = false;
