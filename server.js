@@ -81,6 +81,13 @@ async function initDb() {
     await db.exec("ALTER TABLE guests ADD COLUMN addedAt TEXT");
   } catch (e) { /* already exists */ }
 
+  // Backfill existing records with default timestamp if blank
+  try {
+    await db.run("UPDATE guests SET addedAt = ? WHERE addedAt IS NULL OR addedAt = ''", new Date().toISOString());
+  } catch (e) {
+    console.error('Error backfilling addedAt for existing records:', e);
+  }
+
   // Seed default admin logins if empty
   const count = await db.get('SELECT COUNT(*) as count FROM guests');
   if (count.count === 0) {
