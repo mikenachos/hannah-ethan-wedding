@@ -707,7 +707,7 @@ async function renderAdminTable() {
     if (filterAddedBy && !guest.addedBy?.toLowerCase().includes(filterAddedBy)) return false;
 
     if (filterAddedAt) {
-      const dateStr = guest.addedAt ? new Date(guest.addedAt).toLocaleDateString().toLowerCase() : '';
+      const dateStr = guest.addedAt ? new Date(guest.addedAt).toLocaleString().toLowerCase() : '';
       if (!dateStr.includes(filterAddedAt)) return false;
     }
     
@@ -759,7 +759,7 @@ async function renderAdminTable() {
         <td>${rsvpMatch ? (rsvpMatch.attendance === 'accept' ? 'ACCEPTED' : 'DECLINED') : 'PENDING'}</td>
         <td>${guest.infoCompleted ? '✓' : '—'}</td>
         <td style="font-size: 0.75rem;">${guest.addedBy || 'system'}</td>
-        <td style="font-size: 0.75rem;">${guest.addedAt ? new Date(guest.addedAt).toLocaleDateString() : '—'}</td>
+        <td style="font-size: 0.75rem;">${guest.addedAt ? new Date(guest.addedAt).toLocaleString() : '—'}</td>
         <td>
           <button class="btn-table-action save" data-identifier="${guestIdentifier}" style="margin-bottom: 2px;">Save</button>
           <button class="btn-table-action cancel" style="color: var(--text-secondary);">Cancel</button>
@@ -776,7 +776,7 @@ async function renderAdminTable() {
         <td>${rsvpMatch ? (rsvpMatch.attendance === 'accept' ? 'ACCEPTED' : 'DECLINED') : 'PENDING'}</td>
         <td>${guest.infoCompleted ? '✓' : '—'}</td>
         <td style="font-size: 0.75rem;">${guest.addedBy || 'system'}</td>
-        <td style="font-size: 0.75rem;">${guest.addedAt ? new Date(guest.addedAt).toLocaleDateString() : '—'}</td>
+        <td style="font-size: 0.75rem;">${guest.addedAt ? new Date(guest.addedAt).toLocaleString() : '—'}</td>
         <td>
           <button class="btn-table-action edit" data-identifier="${guestIdentifier}">Edit</button>
           <button class="btn-table-action delete" data-identifier="${guestIdentifier}">Delete</button>
