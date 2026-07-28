@@ -1116,6 +1116,7 @@ async function showContactCollectionModal() {
       }
 
       updatedMembers.push({
+        id: member.id,
         firstName: fName,
         lastName: lName,
         email: email,

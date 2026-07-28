@@ -140,6 +140,7 @@ app.get('/api/guests', async (req, res) => {
   try {
     const rows = await db.all('SELECT * FROM guests');
     const mapped = rows.map(r => ({
+      id: r.id,
       firstName: r.firstName,
       lastName: r.lastName,
       name: r.name,
@@ -275,10 +276,8 @@ app.post('/api/household/update', async (req, res) => {
     const guests = await db.all('SELECT * FROM guests WHERE household = ?', householdId);
     
     for (const g of guests) {
-      // Find matching member in the form input list by name
-      const match = updatedMembers.find(m => 
-        (m.firstName.toLowerCase() === g.firstName.toLowerCase() && m.lastName.toLowerCase() === g.lastName.toLowerCase())
-      ) || {};
+      // Find matching member in the form input list by unique database ID
+      const match = updatedMembers.find(m => m.id === g.id) || {};
       
       const firstName = match.firstName !== undefined ? match.firstName : g.firstName;
       const lastName = match.lastName !== undefined ? match.lastName : g.lastName;
@@ -308,6 +307,7 @@ app.post('/api/household/update', async (req, res) => {
     // Fetch and return the updated household members
     const updated = await db.all('SELECT * FROM guests WHERE household = ?', householdId);
     const mapped = updated.map(r => ({
+      id: r.id,
       firstName: r.firstName,
       lastName: r.lastName,
       name: r.name,
