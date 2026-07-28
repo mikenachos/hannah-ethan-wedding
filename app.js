@@ -298,15 +298,23 @@ function updateUIForEntitlement() {
   const adminDrawerLink = document.getElementById('drawer-admin-link');
   const protectedLinks = document.querySelectorAll('.protected-nav-link');
 
+  const tierDisplayNames = {
+    admin: 'Admin',
+    weekend: 'Weekend',
+    wedding_only: 'Wedding'
+  };
+
+  const displayTier = tierDisplayNames[currentGuestState.tier] || currentGuestState.tier || '';
+
   if (badgeText) {
     badgeText.textContent = currentGuestState.authenticated 
-      ? `${currentGuestState.firstName || currentGuestState.name.split(' ')[0]} — ${currentGuestState.tier.toUpperCase()}`
+      ? `${currentGuestState.firstName || currentGuestState.name.split(' ')[0]} — ${displayTier.toUpperCase()}`
       : 'PRIVATE ACCESS GATEKEEPER';
   }
 
   if (drawerStatusVal) {
     drawerStatusVal.textContent = currentGuestState.authenticated
-      ? `${currentGuestState.name} (${currentGuestState.tier.toUpperCase()})`
+      ? `${currentGuestState.name} (${displayTier})`
       : 'Session Locked / Unverified';
   }
 
@@ -321,6 +329,16 @@ function updateUIForEntitlement() {
       invitationFooterNote.style.display = 'block';
     } else {
       invitationFooterNote.textContent = 'RECEPTION TO FOLLOW';
+    }
+  }
+
+  // Update footer copy dates dynamically for wedding only guests
+  const footerCopy = document.querySelector('.footer-copy');
+  if (footerCopy) {
+    if (currentGuestState.authenticated && currentGuestState.tier === GUEST_TIERS.WEDDING_ONLY) {
+      footerCopy.textContent = 'March 28, 2027 — The Biltmore Hotel, Coral Gables, Florida';
+    } else {
+      footerCopy.textContent = 'March 26–28, 2027 — The Biltmore Hotel, Coral Gables, Florida';
     }
   }
 
