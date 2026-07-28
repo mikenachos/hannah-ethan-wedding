@@ -246,6 +246,30 @@ export async function importGuestsFromCSV(csvText) {
     }
   }
 
+  // Map to store the first guest's first name for each raw household
+  const householdFirstNames = {};
+
+  // First pass: scan the lines to map each raw household to the first guest's first name
+  for (let i = startRow; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    let cols = [];
+    if (delimiter === '\t') {
+      cols = line.split('\t').map(c => c.replace(/^"|"$/g, '').trim());
+    } else {
+      cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
+    }
+
+    const rawHousehold = (cols[householdIdx] || '').trim();
+    const firstName = (cols[firstIdx] || '').trim();
+
+    if (rawHousehold && firstName && !householdFirstNames[rawHousehold]) {
+      // Keep only alphanumeric characters to make a clean ID suffix
+      householdFirstNames[rawHousehold] = firstName.replace(/[^a-zA-Z0-9]/g, '');
+    }
+  }
+
   const newGuests = [];
 
   for (let i = startRow; i < lines.length; i++) {
@@ -260,11 +284,11 @@ export async function importGuestsFromCSV(csvText) {
       cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
     }
 
-    const household = cols[householdIdx] || '';
-    const firstName = cols[firstIdx] || '';
-    const lastName = cols[lastIdx] || '';
-    const email = emailIdx !== -1 ? (cols[emailIdx] || '') : '';
-    const mobile = mobileIdx !== -1 ? (cols[mobileIdx] || '') : '';
+    const rawHousehold = (cols[householdIdx] || '').trim();
+    const firstName = (cols[firstIdx] || '').trim();
+    const lastName = (cols[lastIdx] || '').trim();
+    const email = emailIdx !== -1 ? (cols[emailIdx] || '').trim() : '';
+    const mobile = mobileIdx !== -1 ? (cols[mobileIdx] || '').trim() : '';
     
     // Parse tier field flexibly
     let tier = '';
@@ -279,15 +303,18 @@ export async function importGuestsFromCSV(csvText) {
       }
     }
 
-    if (!firstName || !lastName || !household || !tier) {
+    if (!firstName || !lastName || !rawHousehold || !tier) {
       skippedCount++;
       continue;
     }
 
-    // Check duplicate
+    const uniqueFirst = householdFirstNames[rawHousehold] || firstName.replace(/[^a-zA-Z0-9]/g, '');
+    const household = `${rawHousehold}-${uniqueFirst}`;
+
+    // Check duplicate by name and unique household ID
     const isDuplicate = list.some(g => 
-      (email && g.email && g.email.toLowerCase() === email.toLowerCase()) ||
-      (mobile && g.mobile && normalizePhone(g.mobile) === normalizePhone(mobile))
+      g.name.toLowerCase() === `${firstName} ${lastName}`.toLowerCase() &&
+      g.household.toLowerCase() === household.toLowerCase()
     );
 
     if (isDuplicate) {

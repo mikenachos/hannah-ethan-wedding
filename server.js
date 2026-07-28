@@ -81,7 +81,7 @@ async function initDb() {
         name: 'Hannah Levine',
         email: 'hannah@example.com',
         mobile: '',
-        household: 'Levine-Nachmani',
+        household: 'Levine-Nachmani-Hannah',
         tier: 'admin',
         plusOne: 1,
         note: 'Bride & Admin'
@@ -92,7 +92,7 @@ async function initDb() {
         name: 'Ethan Nachmani',
         email: 'ethan@example.com',
         mobile: '',
-        household: 'Levine-Nachmani',
+        household: 'Levine-Nachmani-Hannah',
         tier: 'admin',
         plusOne: 1,
         note: 'Groom & Admin'
@@ -103,7 +103,7 @@ async function initDb() {
         name: 'Hannah & Ethan (Admin)',
         email: 'admin@biltmore.com',
         mobile: '',
-        household: 'Biltmore-Admins',
+        household: 'Biltmore-Admins-System',
         tier: 'admin',
         plusOne: 1,
         note: 'System Admin'
@@ -114,7 +114,7 @@ async function initDb() {
         name: 'Ethan & Hannah (Admin)',
         email: 'admin@nachmani.com',
         mobile: '',
-        household: 'Nachmani-Admins',
+        household: 'Nachmani-Admins-Ethan',
         tier: 'admin',
         plusOne: 1,
         note: 'System Admin'
@@ -168,15 +168,13 @@ app.get('/api/guests', async (req, res) => {
 app.post('/api/guests/add', async (req, res) => {
   try {
     const g = req.body;
-    // Check duplicates
-    if (g.email || g.mobile) {
-      const duplicate = await db.get(
-        `SELECT * FROM guests WHERE (email = ? AND email != '') OR (mobile = ? AND mobile != '')`,
-        g.email || '', g.mobile || ''
-      );
-      if (duplicate) {
-        return res.json({ success: false, message: 'A guest with this email or mobile number already exists.' });
-      }
+    // Check duplicates by name and household
+    const duplicate = await db.get(
+      `SELECT * FROM guests WHERE LOWER(name) = ? AND LOWER(household) = ?`,
+      g.name.toLowerCase(), g.household.toLowerCase()
+    );
+    if (duplicate) {
+      return res.json({ success: false, message: 'A guest with this name already exists in this household.' });
     }
 
     const addr = g.address || {};
@@ -361,15 +359,14 @@ app.post('/api/admin/import', async (req, res) => {
     let skipped = 0;
 
     for (const g of newGuests) {
-      if (g.email || g.mobile) {
-        const duplicate = await db.get(
-          `SELECT * FROM guests WHERE (email = ? AND email != '') OR (mobile = ? AND mobile != '')`,
-          g.email || '', g.mobile || ''
-        );
-        if (duplicate) {
-          skipped++;
-          continue;
-        }
+      // Check duplicates by name and unique household
+      const duplicate = await db.get(
+        `SELECT * FROM guests WHERE LOWER(name) = ? AND LOWER(household) = ?`,
+        g.name.toLowerCase(), g.household.toLowerCase()
+      );
+      if (duplicate) {
+        skipped++;
+        continue;
       }
 
       const addr = g.address || {};
