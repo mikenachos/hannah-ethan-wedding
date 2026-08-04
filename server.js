@@ -56,7 +56,8 @@ async function initDb() {
       country TEXT,
       infoCompleted INTEGER DEFAULT 0,
       addedBy TEXT DEFAULT 'system',
-      addedAt TEXT
+      addedAt TEXT,
+      giftRegistry INTEGER DEFAULT 0
     )
   `);
 
@@ -79,6 +80,9 @@ async function initDb() {
   } catch (e) { /* already exists */ }
   try {
     await db.exec("ALTER TABLE guests ADD COLUMN addedAt TEXT");
+  } catch (e) { /* already exists */ }
+  try {
+    await db.exec("ALTER TABLE guests ADD COLUMN giftRegistry INTEGER DEFAULT 0");
   } catch (e) { /* already exists */ }
 
   // Backfill existing records with default timestamp if blank
@@ -142,8 +146,8 @@ async function initDb() {
       await db.run(
         `INSERT INTO guests (
           firstName, lastName, name, email, mobile, household, tier, plusOne, note,
-          street, suite, city, state, zip, country, infoCompleted, addedBy, addedAt
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '', '', '', '', '', 'US', 0, 'system', ?)`,
+          street, suite, city, state, zip, country, infoCompleted, addedBy, addedAt, giftRegistry
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '', '', '', '', '', 'US', 0, 'system', ?, 1)`,
         admin.firstName, admin.lastName, admin.name, admin.email, admin.mobile,
         admin.household, admin.tier, admin.plusOne, admin.note, new Date().toISOString()
       );
@@ -177,7 +181,8 @@ app.get('/api/guests', async (req, res) => {
       },
       infoCompleted: !!r.infoCompleted,
       addedBy: r.addedBy || 'system',
-      addedAt: r.addedAt || ''
+      addedAt: r.addedAt || '',
+      giftRegistry: !!r.giftRegistry
     }));
     res.json(mapped);
   } catch (error) {
@@ -200,17 +205,18 @@ app.post('/api/guests/add', async (req, res) => {
     const addr = g.address || {};
     const addedBy = g.addedBy || 'system';
     const addedAt = g.addedAt || new Date().toISOString();
+    const giftRegistry = g.giftRegistry ? 1 : 0;
 
     await db.run(
       `INSERT INTO guests (
         firstName, lastName, name, email, mobile, household, tier, plusOne, note,
-        street, suite, city, state, zip, country, infoCompleted, addedBy, addedAt
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        street, suite, city, state, zip, country, infoCompleted, addedBy, addedAt, giftRegistry
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       g.firstName, g.lastName, g.name, g.email || '', g.mobile || '', g.household, g.tier,
       g.plusOne ? 1 : 0, g.note || '',
       addr.street || '', addr.suite || '', addr.city || '', addr.state || '', addr.zip || '', addr.country || 'US',
       g.infoCompleted ? 1 : 0,
-      addedBy, addedAt
+      addedBy, addedAt, giftRegistry
     );
     res.json({ success: true, guest: g });
   } catch (error) {
@@ -243,6 +249,7 @@ app.post('/api/guests/update', async (req, res) => {
     const plusOne = updatedGuestData.plusOne !== undefined ? (updatedGuestData.plusOne ? 1 : 0) : guest.plusOne;
     const note = updatedGuestData.note !== undefined ? updatedGuestData.note : guest.note;
     const infoCompleted = updatedGuestData.infoCompleted !== undefined ? (updatedGuestData.infoCompleted ? 1 : 0) : guest.infoCompleted;
+    const giftRegistry = updatedGuestData.giftRegistry !== undefined ? (updatedGuestData.giftRegistry ? 1 : 0) : guest.giftRegistry;
 
     let street = guest.street;
     let suite = guest.suite;
@@ -267,12 +274,12 @@ app.post('/api/guests/update', async (req, res) => {
         firstName = ?, lastName = ?, name = ?, email = ?, mobile = ?, 
         household = ?, tier = ?, plusOne = ?, note = ?, 
         street = ?, suite = ?, city = ?, state = ?, zip = ?, country = ?, 
-        infoCompleted = ?
+        infoCompleted = ?, giftRegistry = ?
       WHERE id = ?`,
       firstName, lastName, name, email, mobile,
       household, tier, plusOne, note,
       street, suite, city, state, zip, country,
-      infoCompleted, guest.id
+      infoCompleted, giftRegistry, guest.id
     );
 
     // Sync household addresses
@@ -350,7 +357,8 @@ app.post('/api/household/update', async (req, res) => {
       },
       infoCompleted: !!r.infoCompleted,
       addedBy: r.addedBy || 'system',
-      addedAt: r.addedAt || ''
+      addedAt: r.addedAt || '',
+      giftRegistry: !!r.giftRegistry
     }));
     
     res.json({ success: true, guests: mapped });
@@ -397,17 +405,18 @@ app.post('/api/admin/import', async (req, res) => {
       const addr = g.address || {};
       const addedBy = g.addedBy || 'import';
       const addedAt = g.addedAt || new Date().toISOString();
+      const giftRegistry = g.giftRegistry ? 1 : 0;
 
       await db.run(
         `INSERT INTO guests (
           firstName, lastName, name, email, mobile, household, tier, plusOne, note,
-          street, suite, city, state, zip, country, infoCompleted, addedBy, addedAt
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          street, suite, city, state, zip, country, infoCompleted, addedBy, addedAt, giftRegistry
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         g.firstName, g.lastName, g.name, g.email || '', g.mobile || '', g.household, g.tier,
         g.plusOne ? 1 : 0, g.note || '',
         addr.street || '', addr.suite || '', addr.city || '', addr.state || '', addr.zip || '', addr.country || 'US',
         g.infoCompleted ? 1 : 0,
-        addedBy, addedAt
+        addedBy, addedAt, giftRegistry
       );
       imported++;
     }

@@ -91,7 +91,7 @@ function checkRouteGuard() {
     } else if (currentPath === 'accommodations.html' && !settings.accommodations) {
       isPageDisabled = true;
       sectionName = 'Accommodations';
-    } else if (currentPath === 'registry.html' && !settings.registry) {
+    } else if (currentPath === 'registry.html' && (!settings.registry || !currentGuestState.giftRegistry)) {
       isPageDisabled = true;
       sectionName = 'Registry';
     } else if (currentPath === 'rsvp.html' && !settings.rsvp) {
@@ -195,7 +195,8 @@ function initEntitlementLookup() {
           tier: result.guest.tier,
           plusOne: result.guest.plusOne,
           infoCompleted: result.guest.infoCompleted || false,
-          address: result.guest.address || { street: '', suite: '', city: '', state: '', zip: '', country: 'US' }
+          address: result.guest.address || { street: '', suite: '', city: '', state: '', zip: '', country: 'US' },
+          giftRegistry: !!result.guest.giftRegistry
         };
 
         saveGuestSession();
@@ -400,7 +401,7 @@ function updateUIForEntitlement() {
 
     if (href === 'itinerary.html' && !pageSettings.itinerary) showLink = false;
     if (href === 'accommodations.html' && !pageSettings.accommodations) showLink = false;
-    if (href === 'registry.html' && !pageSettings.registry) showLink = false;
+    if (href === 'registry.html' && (!pageSettings.registry || !currentGuestState.giftRegistry)) showLink = false;
     if (href === 'rsvp.html' && !pageSettings.rsvp) showLink = false;
 
     // Admin Console link should ONLY show if the user is an admin
@@ -528,7 +529,7 @@ function initAdminConsole() {
   // Attach filter event listeners to trigger redraw on typing/selection
   const filterElements = [
     'filter-household', 'filter-name', 'filter-email', 'filter-mobile',
-    'filter-address', 'filter-tier', 'filter-rsvp', 'filter-completed',
+    'filter-address', 'filter-tier', 'filter-registry', 'filter-rsvp', 'filter-completed',
     'filter-addedby', 'filter-addedat'
   ];
   filterElements.forEach(id => {
@@ -554,6 +555,7 @@ function initAdminConsole() {
       const mobile = document.getElementById('new-guest-mobile').value.trim();
       const household = document.getElementById('new-guest-household').value.trim();
       const tier = document.getElementById('new-guest-tier').value;
+      const registryVal = document.getElementById('new-guest-registry').value;
       const note = document.getElementById('new-guest-note').value.trim();
 
       const res = await addGuest({ 
@@ -567,7 +569,8 @@ function initAdminConsole() {
         plusOne: false, 
         note,
         addedBy: currentGuestState.email || 'admin',
-        addedAt: new Date().toISOString()
+        addedAt: new Date().toISOString(),
+        giftRegistry: (registryVal === 'yes')
       });
 
       if (res.success) {
@@ -675,6 +678,7 @@ async function renderAdminTable() {
   const filterMobile = (document.getElementById('filter-mobile')?.value || '').toLowerCase();
   const filterAddress = (document.getElementById('filter-address')?.value || '').toLowerCase();
   const filterTier = document.getElementById('filter-tier')?.value || '';
+  const filterRegistry = document.getElementById('filter-registry')?.value || '';
   const filterRsvp = document.getElementById('filter-rsvp')?.value || '';
   const filterCompleted = document.getElementById('filter-completed')?.value || '';
   const filterAddedBy = (document.getElementById('filter-addedby')?.value || '').toLowerCase();
@@ -693,6 +697,11 @@ async function renderAdminTable() {
     }
     
     if (filterTier && guest.tier !== filterTier) return false;
+    
+    if (filterRegistry) {
+      const allowed = guest.giftRegistry ? 'yes' : 'no';
+      if (allowed !== filterRegistry) return false;
+    }
     
     const rsvpMatch = rsvps.find(r => 
       (guest.email && r.email && r.email.toLowerCase() === guest.email.toLowerCase()) || 
@@ -756,6 +765,12 @@ async function renderAdminTable() {
             <option value="admin" ${guest.tier === 'admin' ? 'selected' : ''}>ADMIN</option>
           </select>
         </td>
+        <td>
+          <select class="lookup-input grid-edit-registry" style="width: 70px; height: 32px; padding: 4px; font-size: 0.8rem;">
+            <option value="yes" ${guest.giftRegistry ? 'selected' : ''}>YES</option>
+            <option value="no" ${!guest.giftRegistry ? 'selected' : ''}>NO</option>
+          </select>
+        </td>
         <td>${rsvpMatch ? (rsvpMatch.attendance === 'accept' ? 'ACCEPTED' : 'DECLINED') : 'PENDING'}</td>
         <td>${guest.infoCompleted ? '✓' : '—'}</td>
         <td style="font-size: 0.75rem;">${guest.addedBy || 'system'}</td>
@@ -773,6 +788,7 @@ async function renderAdminTable() {
         <td>${guest.mobile || '—'}</td>
         <td style="font-size: 0.75rem; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${addrStr}">${addrStr}</td>
         <td><span class="badge-tier ${guest.tier || 'weekend'}">${(guest.tier || '').toUpperCase()}</span></td>
+        <td><span style="font-size: 0.8rem; font-weight: 500; color: ${guest.giftRegistry ? 'green' : 'red'};">${guest.giftRegistry ? 'YES' : 'NO'}</span></td>
         <td>${rsvpMatch ? (rsvpMatch.attendance === 'accept' ? 'ACCEPTED' : 'DECLINED') : 'PENDING'}</td>
         <td>${guest.infoCompleted ? '✓' : '—'}</td>
         <td style="font-size: 0.75rem;">${guest.addedBy || 'system'}</td>
@@ -815,6 +831,7 @@ async function renderAdminTable() {
       const email = row.querySelector('.grid-edit-email').value.trim();
       const mobile = row.querySelector('.grid-edit-mobile').value.trim();
       const tier = row.querySelector('.grid-edit-tier').value;
+      const registryVal = row.querySelector('.grid-edit-registry').value;
       const addrStr = row.querySelector('.grid-edit-address').value.trim();
 
       if (!firstName || !lastName || !household) {
@@ -843,7 +860,8 @@ async function renderAdminTable() {
         email,
         mobile,
         tier,
-        address
+        address,
+        giftRegistry: (registryVal === 'yes')
       };
 
       const res = await updateGuestDirectly(identifier, updatedData);

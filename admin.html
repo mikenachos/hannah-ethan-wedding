@@ -147,6 +147,14 @@
           </div>
 
           <div>
+            <label class="tracking-wider text-xs" style="display:block; margin-bottom: 0.35rem;">Gift Registry</label>
+            <select id="new-guest-registry" class="lookup-input" style="width:100%; height: 42px;">
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+
+          <div>
             <label class="tracking-wider text-xs" style="display:block; margin-bottom: 0.35rem;">Note / Group</label>
             <input type="text" id="new-guest-note" class="lookup-input" style="width:100%; text-align: left;" placeholder="e.g. Family / VIP">
           </div>
@@ -191,6 +199,7 @@
               <th>Mobile</th>
               <th>Mailing Address</th>
               <th>Tier</th>
+              <th>Registry?</th>
               <th>RSVP Status</th>
               <th>Info?</th>
               <th>Added By</th>
@@ -209,6 +218,13 @@
                   <option value="weekend">Weekend</option>
                   <option value="wedding_only">Wedding</option>
                   <option value="admin">Admin</option>
+                </select>
+              </td>
+              <td>
+                <select id="filter-registry" class="table-filter-input">
+                  <option value="">All</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
                 </select>
               </td>
               <td>

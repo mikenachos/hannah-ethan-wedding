@@ -196,6 +196,7 @@ export async function importGuestsFromCSV(csvText, addedBy) {
   let emailIdx = headers.findIndex(h => h.includes('email'));
   let mobileIdx = headers.findIndex(h => h.includes('mobile') || h.includes('phone'));
   let tierIdx = headers.findIndex(h => h.includes('tier'));
+  let registryIdx = headers.findIndex(h => h.includes('registry'));
 
   let startRow = 1;
 
@@ -212,7 +213,16 @@ export async function importGuestsFromCSV(csvText, addedBy) {
     }
 
     const colCount = firstCols.length;
-    if (colCount >= 6) {
+    if (colCount >= 7) {
+      // Household, First, Last, email, mobile, tier, registry
+      householdIdx = 0;
+      firstIdx = 1;
+      lastIdx = 2;
+      emailIdx = 3;
+      mobileIdx = 4;
+      tierIdx = 5;
+      registryIdx = 6;
+    } else if (colCount === 6) {
       // Standard: Household, First, Last, email, mobile, tier
       householdIdx = 0;
       firstIdx = 1;
@@ -220,6 +230,7 @@ export async function importGuestsFromCSV(csvText, addedBy) {
       emailIdx = 3;
       mobileIdx = 4;
       tierIdx = 5;
+      registryIdx = -1;
     } else if (colCount === 5) {
       // 5 Columns: Household, First, Last, (email or mobile), tier
       householdIdx = 0;
@@ -233,6 +244,7 @@ export async function importGuestsFromCSV(csvText, addedBy) {
         mobileIdx = 3;
       }
       tierIdx = 4;
+      registryIdx = -1;
     } else if (colCount === 4) {
       // 4 Columns: Household, First, Last, tier
       householdIdx = 0;
@@ -241,6 +253,7 @@ export async function importGuestsFromCSV(csvText, addedBy) {
       emailIdx = -1;
       mobileIdx = -1;
       tierIdx = 3;
+      registryIdx = -1;
     } else {
       return { success: false, message: 'Invalid format. Must contain at least 4 columns (Household, First, Last, Tier).' };
     }
@@ -303,6 +316,14 @@ export async function importGuestsFromCSV(csvText, addedBy) {
       }
     }
 
+    let giftRegistry = false;
+    if (registryIdx !== -1 && cols[registryIdx]) {
+      const rawReg = cols[registryIdx].trim().toLowerCase();
+      if (rawReg === 'yes' || rawReg === 'true' || rawReg === 'y' || rawReg === '1') {
+        giftRegistry = true;
+      }
+    }
+
     if (!firstName || !lastName || !rawHousehold || !tier) {
       skippedCount++;
       continue;
@@ -335,7 +356,8 @@ export async function importGuestsFromCSV(csvText, addedBy) {
       address: { street: '', suite: '', city: '', state: '', zip: '', country: 'US' },
       infoCompleted: false,
       addedBy: addedBy || 'import',
-      addedAt: new Date().toISOString()
+      addedAt: new Date().toISOString(),
+      giftRegistry: giftRegistry
     });
     importCount++;
   }
