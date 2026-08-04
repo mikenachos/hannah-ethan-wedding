@@ -114,10 +114,19 @@ export async function lookupGuestEntitlement(inputTerm) {
   const cleanPhone = normalizePhone(cleanTerm);
 
   // Check administrators list
-  const foundGuest = list.find(g => 
-    (g.email && g.email.toLowerCase() === cleanTerm) ||
-    (g.mobile && normalizePhone(g.mobile) === cleanPhone && cleanPhone !== '')
-  );
+  const foundGuest = list.find(g => {
+    if (g.email && g.email.toLowerCase() === cleanTerm) return true;
+    if (g.mobile && cleanPhone !== '') {
+      const dbPhone = normalizePhone(g.mobile);
+      if (dbPhone === cleanPhone) return true;
+      
+      // Smart suffix matching to handle leading country codes/zeros
+      const dbSuffix = dbPhone.slice(-9);
+      const cleanSuffix = cleanPhone.replace(/^0+/, '').slice(-9);
+      if (dbSuffix === cleanSuffix && dbSuffix.length >= 7) return true;
+    }
+    return false;
+  });
 
   if (foundGuest) {
     // If the guest is found, filter all guests belonging to the same household
