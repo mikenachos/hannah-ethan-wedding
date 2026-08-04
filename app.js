@@ -894,7 +894,7 @@ async function exportGuestListCSV() {
   const list = await getGuestList();
   const rsvps = await getRsvpList();
 
-  let csv = 'Household,First_Name,Last_Name,Email,Mobile,Street,Suite,City,State,Zip,Country,Tier,Note,RSVP_Status,Meal_Selection,Dietary_Notes,Added_By,Added_At\n';
+  let csv = 'Household,First_Name,Last_Name,Email,Mobile,Street,Suite,City,State,Zip,Country,Tier,Gift_Registry,Note,RSVP_Status,Meal_Selection,Dietary_Notes,Added_By,Added_At\n';
 
   list.forEach(g => {
     const r = rsvps.find(item => 
@@ -911,7 +911,7 @@ async function exportGuestListCSV() {
     const zip = g.address ? `"${(g.address.zip || '').replace(/"/g, '""')}"` : '""';
     const country = g.address ? `"${(g.address.country || '').replace(/"/g, '""')}"` : '""';
 
-    csv += `"${g.household || ''}","${g.firstName || ''}","${g.lastName || ''}","${g.email || ''}","${g.mobile || ''}",${street},${suite},${city},${state},${zip},${country},"${g.tier}","${g.note || ''}","${rsvpStatus}","${meal}",${dietary},"${g.addedBy || 'system'}","${g.addedAt || ''}"\n`;
+    csv += `"${g.household || ''}","${g.firstName || ''}","${g.lastName || ''}","${g.email || ''}","${g.mobile || ''}",${street},${suite},${city},${state},${zip},${country},"${g.tier}","${g.giftRegistry ? 'Yes' : 'No'}","${g.note || ''}","${rsvpStatus}","${meal}",${dietary},"${g.addedBy || 'system'}","${g.addedAt || ''}"\n`;
   });
 
   const blob = new Blob([csv], { type: 'text/csv' });
