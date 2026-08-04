@@ -1097,7 +1097,7 @@ async function showContactCollectionModal() {
           </div>
         </div>
 
-        <h4 class="contact-modal-section-title">Household Members</h4>
+        <h4 class="contact-modal-section-title">Guests</h4>
         ${tabsHeaderHtml}
         ${panelsHtml}
       </div>
