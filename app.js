@@ -36,8 +36,9 @@ let currentGuestState = {
 
 let editingIdentifier = null;
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   loadSavedGuestSession();
+  await syncPageSettings();
   checkRouteGuard();
   initDrawer();
   initEntitlementLookup();
@@ -271,8 +272,29 @@ export function getPageSettings() {
   return defaults;
 }
 
-export function savePageSettings(settings) {
+export async function savePageSettings(settings) {
   localStorage.setItem('hannah_ethan_page_settings', JSON.stringify(settings));
+  try {
+    await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settings)
+    });
+  } catch (e) {
+    console.error('Failed to save settings to server', e);
+  }
+}
+
+export async function syncPageSettings() {
+  try {
+    const res = await fetch('/api/settings');
+    if (res.ok) {
+      const settings = await res.json();
+      localStorage.setItem('hannah_ethan_page_settings', JSON.stringify(settings));
+    }
+  } catch (e) {
+    console.error('Failed to sync page settings', e);
+  }
 }
 
 function loadSavedGuestSession() {
@@ -461,9 +483,12 @@ function renderTimeline() {
 
   EVENTS_LIST.forEach(event => {
     const isRestricted = (event.tierRequired === GUEST_TIERS.WEEKEND) && (currentGuestState.tier === GUEST_TIERS.WEDDING_ONLY);
+    
+    // Completely hide restricted weekend events for wedding-only guests
+    if (isRestricted) return;
 
     const card = document.createElement('div');
-    card.className = `timeline-card ${isRestricted ? 'restricted' : ''}`;
+    card.className = 'timeline-card';
 
     card.innerHTML = `
       <div class="timeline-date-col">
@@ -477,7 +502,7 @@ function renderTimeline() {
           <span>VENUE: ${event.venue}</span>
           <span>ATTIRE: ${event.attire}</span>
         </div>
-        <p class="timeline-desc">${isRestricted ? 'This private event is reserved for guests with Full Weekend invitation entitlement.' : event.description}</p>
+        <p class="timeline-desc">${event.description}</p>
       </div>
     `;
 
@@ -500,7 +525,12 @@ function initRSVPPageForm() {
 
     if (emailInput) emailInput.value = currentGuestState.email || '';
     if (nameInput) nameInput.value = currentGuestState.name || '';
-    if (tierSelect) tierSelect.value = currentGuestState.tier || 'weekend';
+    if (tierSelect) {
+      tierSelect.value = currentGuestState.tier || 'weekend';
+      if (currentGuestState.tier !== GUEST_TIERS.ADMIN) {
+        tierSelect.disabled = true;
+      }
+    }
   }
 
   rsvpForm.addEventListener('submit', (e) => {

@@ -16,8 +16,7 @@ const PORT = process.env.PORT || 8000;
 app.use(express.json());
 app.use(cors());
 
-// Configure database path. Render persistent disks are mounted,
-// we default to data/wedding.db if environment var is set, or local wedding.db
+// Configure database path
 const dbDir = process.env.DATABASE_DIR || '.';
 const dbPath = path.join(dbDir, 'wedding.db');
 
@@ -71,6 +70,14 @@ async function initDb() {
       meal TEXT,
       dietary TEXT,
       timestamp TEXT
+    )
+  `);
+
+  // Create settings table for Section Visibility Controls
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT
     )
   `);
 
@@ -154,9 +161,51 @@ async function initDb() {
     }
     console.log('Seeded database with default admin accounts.');
   }
+
+  // Seed default section visibility settings if empty
+  const settingsCount = await db.get('SELECT COUNT(*) as count FROM settings');
+  if (settingsCount.count === 0) {
+    await db.run("INSERT INTO settings (key, value) VALUES ('itinerary', '1')");
+    await db.run("INSERT INTO settings (key, value) VALUES ('accommodations', '1')");
+    await db.run("INSERT INTO settings (key, value) VALUES ('registry', '1')");
+    await db.run("INSERT INTO settings (key, value) VALUES ('rsvp', '1')");
+    console.log('Seeded database with default section visibility settings.');
+  }
 }
 
 // REST API Endpoints
+
+// GET visibility settings
+app.get('/api/settings', async (req, res) => {
+  try {
+    const rows = await db.all('SELECT * FROM settings');
+    const settings = {};
+    rows.forEach(r => {
+      settings[r.key] = r.value === '1';
+    });
+    res.json(settings);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// POST update visibility settings
+app.post('/api/settings', async (req, res) => {
+  try {
+    const settings = req.body;
+    for (const [key, val] of Object.entries(settings)) {
+      await db.run(
+        `INSERT INTO settings (key, value) VALUES (?, ?)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+        key, val ? '1' : '0'
+      );
+    }
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 app.get('/api/guests', async (req, res) => {
   try {
     const rows = await db.all('SELECT * FROM guests');
